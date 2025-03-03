@@ -2,34 +2,31 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Roulette avec Tapis, Timer et Spin Auto</title>
-
-  <!-- React / ReactDOM -->
+  <title>Roulette Européenne - Timer & Tapis</title>
+  
+  <!-- Références externes : React, ReactDOM, Babel, GSAP -->
   <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-  
-  <!-- GSAP pour l'animation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
+  <!-- Pour un meilleur rendu sur mobile -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
-    /* =================== RESET / BASE =================== */
+    /* ===================== RESET / BASE ===================== */
     * {
       box-sizing: border-box;
-      margin: 0; padding: 0;
+      margin: 0; 
+      padding: 0;
     }
     body {
       background: radial-gradient(circle, #222, #000);
-      color: #fff;
       font-family: Arial, sans-serif;
+      color: #fff;
       text-align: center;
-      padding: 0;
-      margin: 0;
     }
-    
-    /* =================== CONTAINER PRINCIPAL =================== */
+
     .container {
       max-width: 900px;
       margin: 20px auto;
@@ -38,22 +35,17 @@
     h1 {
       margin-bottom: 10px;
     }
-    
-    .section-title {
-      margin: 15px 0 5px 0;
-      font-size: 18px;
-    }
 
-    /* =================== TIMER =================== */
+    /* ===================== TIMER ===================== */
     .timer {
       font-size: 22px;
-      margin-bottom: 10px;
       font-weight: bold;
+      margin-bottom: 10px;
     }
 
-    /* =================== TAPIS DE PARIS =================== */
+    /* ===================== TAPIS DE MISES ===================== */
     .tapis-container {
-      background: #006400; /* vert foncé casino */
+      background: #006400; /* Vert foncé casino */
       border: 3px solid #0a5f0a;
       border-radius: 8px;
       padding: 10px;
@@ -66,33 +58,31 @@
       gap: 5px;
       margin-top: 10px;
     }
-    /* Case d'un numéro sur le tapis */
     .tapis-cell {
-      width: 40px; 
+      width: 40px;
       height: 40px;
       background: #013201;
       border-radius: 4px;
-      display: flex; 
-      align-items: center; 
+      display: flex;
+      align-items: center;
       justify-content: center;
       font-size: 14px;
       font-weight: bold;
       cursor: pointer;
-      user-select: none;
       color: white;
-      border: 2px solid #115511; 
+      border: 2px solid #115511;
     }
     .tapis-cell.checked {
       background: #02a702; 
       border-color: #0f3;
     }
-    /* 0 s'affiche sur la première colonne, on fera un style à part */
     .zero-cell {
-      grid-column: span 2; /* plus large si tu veux */
       background: #004400;
     }
-    
-    /* Options de pari (Rouge, Noir, Pair, Impair) */
+    .section-title {
+      margin: 15px 0 5px 0;
+      font-size: 18px;
+    }
     .options-row {
       display: flex;
       justify-content: center;
@@ -118,7 +108,7 @@
       border-color: #0f3;
     }
 
-    /* =================== ROULETTE =================== */
+    /* ===================== ROULETTE ===================== */
     .roulette-section {
       display: flex;
       flex-direction: column;
@@ -136,10 +126,9 @@
       height: 100%;
       border: 5px solid gold;
       border-radius: 50%;
-      overflow: hidden;
       background: #333;
+      overflow: hidden;
     }
-    /* Pointeur fixe en haut */
     .pointer {
       position: absolute;
       top: -20px;
@@ -152,7 +141,6 @@
       border-bottom: 20px solid yellow;
       z-index: 10;
     }
-    /* Les 37 secteurs */
     .sector {
       position: absolute;
       width: 50%; 
@@ -173,16 +161,16 @@
       transform: rotate(-90deg);
     }
 
-    /* =================== RESULTAT =================== */
+    /* ===================== RESULTAT ===================== */
     .result {
       font-size: 20px;
       margin-top: 10px;
-      min-height: 28px; /* éviter le saut */
+      min-height: 28px;
     }
     .message {
       margin-top: 5px;
       font-size: 18px;
-      color: #ffcc00; /* jaune or */
+      color: #ffcc00;
       min-height: 24px;
     }
   </style>
@@ -190,9 +178,10 @@
 <body>
   <div id="root"></div>
 
+  <!-- On dit à Babel de transpilier le code React/JSX ici -->
   <script type="text/babel">
     /***********************************************
-     * Tableau de 37 cases (roulette européenne)
+     * 1) Données de la Roulette Européenne
      ***********************************************/
     const sectorsData = [
       { number: 0, color: 'green' },
@@ -233,10 +222,10 @@
       { number: 35, color: 'black' },
       { number: 36, color: 'red' },
     ];
-    const sectorAngle = 360 / sectorsData.length; // ~9.73°
+    const sectorAngle = 360 / sectorsData.length; // ~ 9.7297°
 
     /***********************************************
-     * Composant principal App
+     * 2) Composant principal App
      ***********************************************/
     function App() {
       return (
@@ -247,10 +236,15 @@
       );
     }
 
+    /***********************************************
+     * 3) Composant Game : Timer, Mises, Roulette
+     ***********************************************/
     function Game() {
-      /* État du jeu */
-      const [timeLeft, setTimeLeft] = React.useState(30); // 30s
-      const [spinDone, setSpinDone] = React.useState(false); // pour éviter 2 spins
+      // Timer 30s
+      const [timeLeft, setTimeLeft] = React.useState(30);
+      const [spinDone, setSpinDone] = React.useState(false); // Empêche de relancer plusieurs fois
+
+      // Bets
       const [bets, setBets] = React.useState({
         numbers: new Set(),
         red: false,
@@ -259,19 +253,19 @@
         odd: false,
       });
 
-      /* État roulette */
+      // Roulette
       const [isSpinning, setIsSpinning] = React.useState(false);
       const [totalRotation, setTotalRotation] = React.useState(0);
       const wheelRef = React.useRef(null);
 
-      /* Résultat final */
+      // Résultat
       const [result, setResult] = React.useState(null);   // { number, color }
       const [message, setMessage] = React.useState('');   // "Bravo"/"Désolé"/"Dommage"
 
-      /* Timer => spin auto après 30s */
+      /* ========== Timer => spin auto à 0s ========== */
       React.useEffect(() => {
         if (timeLeft <= 0 && !spinDone) {
-          doSpin();
+          doSpin();        // on lance la roue
           setSpinDone(true);
           return;
         }
@@ -283,7 +277,7 @@
         }
       }, [timeLeft, spinDone]);
 
-      /* ====== Fonction de spin automatique ====== */
+      /* ========== Tourner la roulette ========== */
       function doSpin() {
         if (isSpinning) return;
         setIsSpinning(true);
@@ -293,59 +287,57 @@
         // Choisir un secteur aléatoire
         const randomSector = Math.floor(Math.random() * sectorsData.length);
 
-        // 5 tours complets = 5 * 360 = 1800
+        // Ex: 5 tours complets = 5 * 360 = 1800
         const fullTurns = 360 * 5;
         // Angle final
         const finalRotation = totalRotation + fullTurns - (randomSector * sectorAngle);
 
         gsap.to(wheelRef.current, {
           rotation: finalRotation,
-          duration: 4.5,  // durée de l'animation
+          duration: 4.5, 
           ease: "power2.out",
           transformOrigin: "50% 50%",
           onComplete: () => {
             setTotalRotation(finalRotation);
             setIsSpinning(false);
-
             const landed = sectorsData[randomSector];
             setResult(landed);
-            
-            // Vérifier gain/perte + affichage message
-            showOutcome(landed);
+            // Vérifier si on a gagné
+            checkWin(landed);
           }
         });
       }
 
-      /* ====== Vérifier gain/perte => setMessage() ====== */
-      function showOutcome(landed) {
+      /* ========== Vérifier gain/perte ========== */
+      function checkWin(landed) {
         const { numbers, red, black, even, odd } = bets;
 
-        // Si aucune mise
-        const noBet =
-          numbers.size === 0 && 
+        // Aucune mise ?
+        const noBet = (
+          numbers.size === 0 &&
           red === false &&
           black === false &&
           even === false &&
-          odd === false;
-
+          odd === false
+        );
         if (noBet) {
           setMessage("Dommage, vous auriez pu gagner avec nous aujourd’hui !");
           return;
         }
 
         let isWinner = false;
-        // num
+        // Numéros
         if (numbers.has(landed.number)) {
           isWinner = true;
         }
-        // couleur
+        // Couleur
         if (red && landed.color === 'red') {
           isWinner = true;
         }
         if (black && landed.color === 'black') {
           isWinner = true;
         }
-        // pair/impair (0 = ni pair ni impair)
+        // Pair/Impair (0 est neutre)
         if (even && landed.number !== 0 && landed.number % 2 === 0) {
           isWinner = true;
         }
@@ -360,13 +352,16 @@
         }
       }
 
-      /* ====== Sélection des mises ====== */
+      /* ========== Gérer la sélection des mises ========== */
       function toggleNumber(n) {
-        if (isSpinning || spinDone) return; // plus de changement si spin enclenché
-        const newNumbers = new Set(bets.numbers);
-        if (newNumbers.has(n)) newNumbers.delete(n);
-        else newNumbers.add(n);
-        setBets({ ...bets, numbers: newNumbers });
+        if (isSpinning || spinDone) return; 
+        const newSet = new Set(bets.numbers);
+        if (newSet.has(n)) {
+          newSet.delete(n);
+        } else {
+          newSet.add(n);
+        }
+        setBets({ ...bets, numbers: newSet });
       }
       function toggleOption(opt) {
         if (isSpinning || spinDone) return;
@@ -375,17 +370,14 @@
 
       return (
         <>
-          {/* Timer affiché */}
           <div className="timer">
             {timeLeft > 0 
-              ? `Misez vite : ${timeLeft}s…`
-              : spinDone 
-                ? "La roulette est terminée." 
-                : "La roulette va tourner !"
+              ? `Misez vite : ${timeLeft}s restantes`
+              : "La roulette va/est en train de tourner..."
             }
           </div>
-          
-          {/* TAPIS pour parier */}
+
+          {/* TAPIS DE MISES */}
           <Tapis bets={bets} toggleNumber={toggleNumber} toggleOption={toggleOption} />
 
           {/* ROULETTE */}
@@ -412,77 +404,64 @@
               </div>
             </div>
 
-            {/* Affichage du résultat */}
             <div className="result">
               {result && (
                 <span>
-                  Résultat : <strong style={{
-                    color: result.color === 'black' ? '#ccc' : result.color
-                  }}>
+                  Résultat :&nbsp;
+                  <strong style={{ color: result.color === 'black' ? '#ccc' : result.color }}>
                     {result.number}
                   </strong>
                 </span>
               )}
             </div>
+
             <div className="message">{message}</div>
           </div>
         </>
       );
     }
 
-    /* ==================== Tapis : grille 0..36 + options rouge/noir/pair/impair ==================== */
+    /***********************************************
+     * 4) Composant Tapis : numéros + Rouge/Noir/Pair/Impair
+     ***********************************************/
     function Tapis({ bets, toggleNumber, toggleOption }) {
-      // On affiche 12 colonnes, 3 lignes => numéros 1..36
-      // Sur la 1ère ligne, on peut mettre 1..12, 2e = 13..24, 3e = 25..36, plus la case 0 à part
-      // Pour simplifier, on fait juste un "grid" 12 colonnes, 3 rangées, plus 1 case pour 0
-      // On colorie en style "rouge" / "noir" / "vert" ? Ici on se contente d'un hover ou d'un checked
-
-      // Options
       const { red, black, even, odd } = bets;
 
-      // On construit la liste [1..36]
-      const numbers1to36 = sectorsData.filter(s => s.number >= 1 && s.number <= 36);
+      // On veut lister 1..36, plus la case 0
+      const numbers1to36 = sectorsData.filter(s => s.number >= 1);
 
       return (
         <div className="tapis-container">
-          <div className="section-title">Choisissez vos mises</div>
+          <div className="section-title">Faites vos jeux</div>
 
-          {/* Options (Rouge, Noir, Pair, Impair) */}
+          {/* Rouge / Noir / Pair / Impair */}
           <div className="options-row">
-            <label 
-              className={`option-item ${red ? 'active' : ''}`}
-            >
+            <label className={`option-item ${red ? 'active' : ''}`}>
               <input 
-                type="checkbox" 
-                checked={red} 
+                type="checkbox"
+                checked={red}
                 onChange={() => toggleOption('red')}
               />
               Rouge
             </label>
-            <label
-              className={`option-item ${black ? 'active' : ''}`}
-            >
-              <input
+            <label className={`option-item ${black ? 'active' : ''}`}>
+              <input 
                 type="checkbox"
                 checked={black}
                 onChange={() => toggleOption('black')}
               />
               Noir
             </label>
-            <label
-              className={`option-item ${even ? 'active' : ''}`}
-            >
-              <input
+            <label className={`option-item ${even ? 'active' : ''}`}>
+              <input 
                 type="checkbox"
                 checked={even}
                 onChange={() => toggleOption('even')}
               />
               Pair
             </label>
-            <label
-              className={`option-item ${odd ? 'active' : ''}`}
-            >
-              <input
+            <label className={`option-item ${odd ? 'active' : ''}`}>
+              <input 
                 type="checkbox"
                 checked={odd}
                 onChange={() => toggleOption('odd')}
@@ -493,17 +472,16 @@
 
           {/* Grille 0..36 */}
           <div className="tapis-grid">
-            {/* Case 0 en haut à gauche */}
+            {/* Case 0 */}
             <div 
-              className={`tapis-cell zero-cell ${bets.numbers.has(0) ? 'checked' : ''}`} 
-              style={{ gridColumn: '1 / 2' }}
+              className={`tapis-cell zero-cell ${bets.numbers.has(0) ? 'checked' : ''}`}
               onClick={() => toggleNumber(0)}
             >
               0
             </div>
 
-            {numbers1to36.map((sec) => (
-              <div
+            {numbers1to36.map(sec => (
+              <div 
                 key={sec.number}
                 className={`tapis-cell ${bets.numbers.has(sec.number) ? 'checked' : ''}`}
                 onClick={() => toggleNumber(sec.number)}
@@ -516,6 +494,9 @@
       );
     }
 
+    /***********************************************
+     * 5) Rendu final
+     ***********************************************/
     ReactDOM.render(<App />, document.getElementById('root'));
   </script>
 </body>
