@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Roulette Game</title>
+  <!-- React / ReactDOM -->
+  <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <!-- GSAP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+  <style>
+    /* =======================
+       STYLES GLOBAUX
+       ======================= */
+    body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle, #222, #000);
+      font-family: Arial, sans-serif;
+      color: #fff;
+      text-align: center;
+    }
+
+    /* =======================
+       CONTENEUR PRINCIPAL
+       ======================= */
+    .container {
+      margin: 50px auto;
+      width: 400px;
+      position: relative;
+    }
+
+    /* =======================
+       ROUE + POINTEUR
+       ======================= */
+    .roulette-wrapper {
+      position: relative;
+      width: 300px;
+      height: 300px;
+      margin: 0 auto 20px auto;
+    }
+
+    .wheel {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border: 5px solid gold;
+      border-radius: 50%;
+      overflow: hidden;
+      background: #333;
+    }
+
+    /* Le pointeur est fixe tout en haut ; la roue tourne en-dessous */
+    .pointer {
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-bottom: 20px solid yellow;
+      z-index: 10;
+    }
+
+    /* =======================
+       CASES/SECTEURS
+       ======================= */
+    .sector {
+      position: absolute;
+      width: 50%;
+      height: 50%;
+      left: 50%;
+      top: 50%;
+      transform-origin: 0 100%;
+      border-top-left-radius: 100%;
+      border-top-right-radius: 100%;
+      border-bottom-right-radius: 0;
+      border-bottom-left-radius: 0;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding-left: 10px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .sector-number {
+      transform: rotate(-90deg);
+    }
+
+    /* =======================
+       BOUTON + RÉSULTAT
+       ======================= */
+    .spin-btn {
+      padding: 12px 24px;
+      background: gold;
+      color: black;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s ease-in-out, box-shadow 0.3s;
+      box-shadow: 0 4px 10px rgba(255, 215, 0, 0.7);
+    }
+    .spin-btn:hover {
+      transform: scale(1.05);
+    }
+    .spin-btn:active {
+      transform: scale(0.95);
+    }
+    .spin-btn:disabled {
+      background: gray;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .result {
+      margin-top: 10px;
+      font-size: 22px;
+      height: 28px; /* Évite le saut quand vide */
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script type="text/babel">
+    /*******************************************
+     * Tableau de 37 cases (roulette européenne):
+     * 0 (vert), puis 1..36 alternés rouge/noir.
+     *******************************************/
+    const sectorsData = [
+      { number: 0, color: 'green' },
+      { number: 1, color: 'red' },
+      { number: 2, color: 'black' },
+      { number: 3, color: 'red' },
+      { number: 4, color: 'black' },
+      { number: 5, color: 'red' },
+      { number: 6, color: 'black' },
+      { number: 7, color: 'red' },
+      { number: 8, color: 'black' },
+      { number: 9, color: 'red' },
+      { number: 10, color: 'black' },
+      { number: 11, color: 'black' },
+      { number: 12, color: 'red' },
+      { number: 13, color: 'black' },
+      { number: 14, color: 'red' },
+      { number: 15, color: 'black' },
+      { number: 16, color: 'red' },
+      { number: 17, color: 'black' },
+      { number: 18, color: 'red' },
+      { number: 19, color: 'red' },
+      { number: 20, color: 'black' },
+      { number: 21, color: 'red' },
+      { number: 22, color: 'black' },
+      { number: 23, color: 'red' },
+      { number: 24, color: 'black' },
+      { number: 25, color: 'red' },
+      { number: 26, color: 'black' },
+      { number: 27, color: 'red' },
+      { number: 28, color: 'black' },
+      { number: 29, color: 'black' },
+      { number: 30, color: 'red' },
+      { number: 31, color: 'black' },
+      { number: 32, color: 'red' },
+      { number: 33, color: 'black' },
+      { number: 34, color: 'red' },
+      { number: 35, color: 'black' },
+      { number: 36, color: 'red' },
+    ];
+
+    // Chaque case a un angle d'environ 360/37 ≈ 9.7297°
+    const sectorAngle = 360 / sectorsData.length;
+
+    function Roulette() {
+      const [isSpinning, setIsSpinning] = React.useState(false);
+      const [currentRotation, setCurrentRotation] = React.useState(0);
+      const [result, setResult] = React.useState(null);
+
+      function spinWheel() {
+        if (isSpinning) return;
+
+        setIsSpinning(true);
+        setResult(null);
+
+        // Calcule un sector aléatoire (0..36)
+        const randomSector = Math.floor(Math.random() * sectorsData.length);
+
+        // On veut faire plusieurs tours complets + l'offset nécessaire
+        // Ex: 5 tours complets = 5 * 360 = 1800
+        const fullTurns = 360 * 5;
+
+        // L'angle final pour que la case randomSector soit sous le pointeur
+        // => - (randomSector * sectorAngle) (roue tourne dans le sens inverse)
+        const finalRotation = currentRotation + fullTurns 
+                            - (randomSector * sectorAngle);
+
+        // Lance l'animation de currentRotation à finalRotation
+        gsap.to({}, {
+          duration: 5,
+          onUpdate: (anim) => {
+            const progress = anim.progress(); // Valeur de 0 à 1
+            const newAngle = currentRotation + (finalRotation - currentRotation) * progress;
+            setCurrentRotation(newAngle);
+          },
+          onComplete: () => {
+            setCurrentRotation(finalRotation);
+            setIsSpinning(false);
+            setResult(sectorsData[randomSector]);
+          },
+          ease: 'power2.out'
+        });
+      }
+
+      return (
+        <div className="container">
+          <h1>🎡 Roulette Européenne</h1>
+          <div className="roulette-wrapper">
+            {/* Pointeur fixe */}
+            <div className="pointer"></div>
+
+            {/* Roue qui tourne */}
+            <div 
+              className="wheel"
+              style={{ transform: `rotate(${currentRotation}deg)` }}
+            >
+              {sectorsData.map((sec, index) => {
+                const rotateDeg = index * sectorAngle;
+                return (
+                  <div
+                    key={index}
+                    className="sector"
+                    style={{
+                      transform: `rotate(${rotateDeg}deg)`,
+                      backgroundColor: sec.color,
+                      color: sec.color === 'black' ? 'white' : 'black'
+                    }}
+                  >
+                    <div className="sector-number">{sec.number}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <button 
+            className="spin-btn"
+            onClick={spinWheel}
+            disabled={isSpinning}
+          >
+            {isSpinning ? 'Spinning...' : 'Lancer la roue'}
+          </button>
+
+          <div className="result">
+            {result && (
+              <div>
+                Résultat : 
+                <strong style={{ color: result.color === 'black' ? '#ccc' : result.color }}>
+                  {result.number}
+                </strong>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      return <Roulette />;
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
