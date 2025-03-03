@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Roulette Game</title>
+  <title>Roulette avec Paris et Timer</title>
   <!-- React / ReactDOM -->
   <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
@@ -11,79 +11,116 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
   <style>
-    /* ======= Styles de base ======= */
     body {
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
       background: radial-gradient(circle, #222, #000);
       font-family: Arial, sans-serif;
       color: #fff;
       text-align: center;
     }
     .container {
-      margin: 50px auto;
-      width: 400px;
+      width: 90%;
+      max-width: 800px;
+      margin: 30px auto;
       position: relative;
+    }
+    h1 {
+      margin-bottom: 10px;
     }
 
-    /* ======= La zone de la roulette ======= */
+    /* ================== Zone de la Roulette ================== */
+    .roulette-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+    }
     .roulette-wrapper {
       position: relative;
-      width: 300px;
-      height: 300px;
-      margin: 0 auto 20px auto;
+      width: 300px; height: 300px;
+      margin-bottom: 20px;
     }
-    /* La roue elle-même */
     .wheel {
       position: relative;
-      width: 300px;
-      height: 300px;
+      width: 300px; height: 300px;
       border: 5px solid gold;
       border-radius: 50%;
       overflow: hidden;
       background: #333;
       margin: 0 auto;
     }
-    /* Le pointeur fixe en haut */
     .pointer {
       position: absolute;
-      top: -20px;
+      top: -20px; 
       left: 50%;
       transform: translateX(-50%);
-      width: 0;
-      height: 0;
+      width: 0; height: 0;
       border-left: 10px solid transparent;
       border-right: 10px solid transparent;
       border-bottom: 20px solid yellow;
       z-index: 10;
     }
-
-    /* ======= Les secteurs (numéros) ======= */
     .sector {
       position: absolute;
-      width: 50%;
+      width: 50%; 
       height: 50%;
-      left: 50%;
+      left: 50%; 
       top: 50%;
       transform-origin: 0 100%;
       border-top-left-radius: 100%;
       border-top-right-radius: 100%;
-      border-bottom-right-radius: 0;
-      border-bottom-left-radius: 0;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
+      display: flex; 
+      align-items: center; 
       justify-content: flex-start;
       padding-left: 10px;
-      font-weight: bold;
+      font-weight: bold; 
       font-size: 14px;
     }
-    /* Le nombre texte, qu'on « tourne » pour qu'il soit horizontal */
     .sector-number {
       transform: rotate(-90deg);
     }
 
-    /* ======= Bouton + zone de résultat ======= */
+    /* ================== Zone de Mise ================== */
+    .bets-container {
+      margin: 20px auto;
+      background: #333;
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 600px;
+    }
+    .bets-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      justify-content: center;
+      margin: 10px 0;
+    }
+    .bet-item {
+      display: flex;
+      align-items: center;
+      background: #444;
+      border-radius: 4px;
+      padding: 5px 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .bet-item input {
+      margin-right: 5px;
+      cursor: pointer;
+    }
+    .options-row {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 10px;
+    }
+    .timer {
+      font-size: 20px;
+      font-weight: bold;
+      margin: 15px 0;
+    }
+
+    /* ================== Boutons et Résultat ================== */
     .spin-btn {
       padding: 12px 24px;
       background: gold;
@@ -95,6 +132,7 @@
       cursor: pointer;
       transition: transform 0.2s ease-in-out, box-shadow 0.3s;
       box-shadow: 0 4px 10px rgba(255, 215, 0, 0.7);
+      margin: 10px 0;
     }
     .spin-btn:hover {
       transform: scale(1.05);
@@ -111,7 +149,7 @@
     .result {
       margin-top: 10px;
       font-size: 22px;
-      height: 28px; /* évite les sauts quand vide */
+      min-height: 30px;
     }
   </style>
 </head>
@@ -120,8 +158,7 @@
 
   <script type="text/babel">
     /********************************************
-     * Tableau de 37 cases (roulette européenne):
-     * 0 (vert), 1..36 (alternance rouge/noir).
+     * Données pour la roulette européenne (37 cases)
      ********************************************/
     const sectorsData = [
       { number: 0, color: 'green' },
@@ -162,103 +199,276 @@
       { number: 35, color: 'black' },
       { number: 36, color: 'red' },
     ];
+    const sectorAngle = 360 / sectorsData.length; // ~ 9.73°
 
-    // Angle d'un secteur = 360° / 37 ≈ 9.7297°
-    const sectorAngle = 360 / sectorsData.length;
-
-    function Roulette() {
-      // Référence vers l'élément DOM de la roue
-      const wheelRef = React.useRef(null);
-
-      const [isSpinning, setIsSpinning] = React.useState(false);
-      const [totalRotation, setTotalRotation] = React.useState(0); // Cumule l'angle
-      const [result, setResult] = React.useState(null);
-
-      function spinWheel() {
-        if (isSpinning) return;
-        setIsSpinning(true);
-        setResult(null);
-
-        // On choisit un secteur aléatoire (0..36)
-        const randomSector = Math.floor(Math.random() * sectorsData.length);
-
-        // On veut faire par ex. 5 tours complets = 5 * 360 = 1800
-        const fullTurns = 360 * 5;
-
-        // L'angle final pour que la case randomSector atterrisse en haut
-        // => on tourne la roue dans le sens inverse, donc "- (randomSector * sectorAngle)"
-        const finalRotation = totalRotation + fullTurns - (randomSector * sectorAngle);
-
-        // Animation avec GSAP, de l'angle actuel vers l'angle final
-        gsap.to(wheelRef.current, {
-          rotation: finalRotation,
-          duration: 5,
-          ease: "power2.out",
-          transformOrigin: "50% 50%", // Centre de la roue
-          onComplete: () => {
-            // On mémorise l'angle final dans le state
-            setTotalRotation(finalRotation);
-            setIsSpinning(false);
-            // Affiche le numéro gagnant
-            setResult(sectorsData[randomSector]);
-          }
-        });
-      }
-
+    function App() {
       return (
         <div className="container">
-          <h1>🎡 Roulette Européenne</h1>
-          
-          <div className="roulette-wrapper">
-            {/* Pointeur fixe */}
-            <div className="pointer"></div>
-
-            {/* Roue animée par GSAP */}
-            <div ref={wheelRef} className="wheel">
-              {/* On crée un <div> secteur pour chaque case */}
-              {sectorsData.map((sec, index) => {
-                const rotateDeg = index * sectorAngle; // angle du secteur
-                return (
-                  <div
-                    key={index}
-                    className="sector"
-                    style={{
-                      transform: `rotate(${rotateDeg}deg)`,
-                      backgroundColor: sec.color,
-                      color: sec.color === 'black' ? '#fff' : '#000'
-                    }}
-                  >
-                    <div className="sector-number">{sec.number}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <button 
-            className="spin-btn"
-            onClick={spinWheel}
-            disabled={isSpinning}
-          >
-            {isSpinning ? 'Spinning...' : 'Lancer la roue'}
-          </button>
-
-          <div className="result">
-            {result && (
-              <div>
-                Résultat :&nbsp;
-                <strong style={{ color: result.color === 'black' ? '#ccc' : result.color }}>
-                  {result.number}
-                </strong>
-              </div>
-            )}
-          </div>
+          <h1>Roulette Européenne</h1>
+          <RouletteWithBets />
         </div>
       );
     }
 
-    function App() {
-      return <Roulette />;
+    function RouletteWithBets() {
+      // Réfs pour la roue, pour l'animation GSAP
+      const wheelRef = React.useRef(null);
+
+      // État du jeu
+      const [isSpinning, setIsSpinning] = React.useState(false);
+      const [totalRotation, setTotalRotation] = React.useState(0);
+      const [result, setResult] = React.useState(null);
+
+      // Timer 30s
+      const [timeLeft, setTimeLeft] = React.useState(30);
+      const [spinDone, setSpinDone] = React.useState(false); // Pour éviter de relancer le spin après 1er
+
+      // Bets = {
+      //   numbers: new Set([1,2,3...]),
+      //   red: boolean,
+      //   black: boolean,
+      //   even: boolean,
+      //   odd: boolean
+      // }
+      const [bets, setBets] = React.useState({
+        numbers: new Set(),
+        red: false,
+        black: false,
+        even: false,
+        odd: false,
+      });
+
+      // Décrémente le timer chaque seconde
+      React.useEffect(() => {
+        if (timeLeft <= 0 && !spinDone) {
+          // Le temps est écoulé => on lance la roue
+          startSpin();
+          setSpinDone(true);
+          return;
+        }
+        if (timeLeft > 0 && !spinDone) {
+          const timerId = setInterval(() => {
+            setTimeLeft(prev => prev - 1);
+          }, 1000);
+          return () => clearInterval(timerId);
+        }
+      }, [timeLeft, spinDone]);
+
+      // Fonction pour (dé)cocher un numéro
+      function toggleNumber(num) {
+        if (isSpinning || spinDone) return; // on ne modifie pas après spin
+        const newSet = new Set(bets.numbers);
+        if (newSet.has(num)) {
+          newSet.delete(num);
+        } else {
+          newSet.add(num);
+        }
+        setBets({ ...bets, numbers: newSet });
+      }
+
+      // Fonction pour cocher/décocher rouge, noir, pair, impair
+      function toggleOption(opt) {
+        if (isSpinning || spinDone) return;
+        setBets({ ...bets, [opt]: !bets[opt] });
+      }
+
+      // Lance la roue (random)
+      function startSpin() {
+        if (isSpinning) return;
+        setIsSpinning(true);
+        setResult(null);
+
+        // Choix d'un secteur aléatoire
+        const randomSector = Math.floor(Math.random() * sectorsData.length);
+
+        // Faire 5 tours complets = 5 * 360 = 1800
+        const fullTurns = 360 * 5;
+        // Angle final
+        const finalRotation = totalRotation + fullTurns - (randomSector * sectorAngle);
+
+        // Animation GSAP
+        gsap.to(wheelRef.current, {
+          rotation: finalRotation,
+          duration: 5,
+          ease: "power2.out",
+          transformOrigin: "50% 50%",
+          onComplete: () => {
+            setTotalRotation(finalRotation);
+            setIsSpinning(false);
+
+            const landed = sectorsData[randomSector];
+            setResult(landed);
+
+            // Vérifier le gain ou la perte
+            checkWin(landed);
+          }
+        });
+      }
+
+      // Vérifier si on a gagné ou non
+      function checkWin(landed) {
+        const { numbers, red, black, even, odd } = bets;
+
+        // Si aucun pari n'a été fait
+        const noBetPlaced =
+          numbers.size === 0 &&
+          red === false &&
+          black === false &&
+          even === false &&
+          odd === false;
+
+        if (noBetPlaced) {
+          alert("Dommage, vous auriez pu gagner avec nous aujourd’hui !");
+          return;
+        }
+
+        let isWinner = false;
+
+        // Check numbers
+        if (numbers.has(landed.number)) {
+          isWinner = true;
+        }
+        // Check red/black
+        if (red && landed.color === 'red') {
+          isWinner = true;
+        }
+        if (black && landed.color === 'black') {
+          isWinner = true;
+        }
+        // Check even/odd
+        // 0 on le considère ni pair ni impair ici
+        if (even && landed.number !== 0 && landed.number % 2 === 0) {
+          isWinner = true;
+        }
+        if (odd && landed.number % 2 === 1) {
+          isWinner = true;
+        }
+
+        if (isWinner) {
+          alert("Bravo, vous avez gagné !");
+        } else {
+          alert("Désolé, vous avez perdu !");
+        }
+      }
+
+      return (
+        <>
+          <div className="timer">
+            {timeLeft > 0 
+              ? `Il vous reste ${timeLeft} sec pour miser...`
+              : "Le spin est en cours ou terminé !"}
+          </div>
+
+          {/* Zone de paris */}
+          <div className="bets-container">
+            <h3>Faites vos jeux</h3>
+
+            {/* Options de couleur / pair / impair */}
+            <div className="options-row">
+              <label className="bet-item">
+                <input
+                  type="checkbox"
+                  checked={bets.red}
+                  onChange={() => toggleOption('red')}
+                />Rouge
+              </label>
+              <label className="bet-item">
+                <input
+                  type="checkbox"
+                  checked={bets.black}
+                  onChange={() => toggleOption('black')}
+                />Noir
+              </label>
+              <label className="bet-item">
+                <input
+                  type="checkbox"
+                  checked={bets.even}
+                  onChange={() => toggleOption('even')}
+                />Pair
+              </label>
+              <label className="bet-item">
+                <input
+                  type="checkbox"
+                  checked={bets.odd}
+                  onChange={() => toggleOption('odd')}
+                />Impair
+              </label>
+            </div>
+
+            {/* Grille de numéros 0..36 */}
+            <div className="bets-grid">
+              {sectorsData.map(sec => (
+                <label
+                  key={sec.number}
+                  className="bet-item"
+                  style={{
+                    backgroundColor: bets.numbers.has(sec.number) ? '#666' : '#444',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={bets.numbers.has(sec.number)}
+                    onChange={() => toggleNumber(sec.number)}
+                  />
+                  {sec.number}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Section Roulette */}
+          <div className="roulette-section">
+            <div className="roulette-wrapper">
+              <div className="pointer"></div>
+              <div ref={wheelRef} className="wheel">
+                {sectorsData.map((sec, i) => {
+                  const angle = i * sectorAngle;
+                  return (
+                    <div
+                      key={i}
+                      className="sector"
+                      style={{
+                        transform: `rotate(${angle}deg)`,
+                        backgroundColor: sec.color,
+                        color: sec.color === 'black' ? '#fff' : '#000'
+                      }}
+                    >
+                      <div className="sector-number">{sec.number}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Bouton manuel (si tu veux forcer un spin avant 30s, optionnel) */}
+            <button
+              className="spin-btn"
+              onClick={() => {
+                if (!spinDone) {
+                  setTimeLeft(0); // force la fin du timer
+                  setSpinDone(true);
+                }
+              }}
+              disabled={isSpinning || spinDone}
+            >
+              {isSpinning ? 'Spinning...' : 'Lancer la roue maintenant'}
+            </button>
+
+            {/* Résultat visible si on veut (facultatif) */}
+            <div className="result">
+              {result && (
+                <div>
+                  Résultat : <strong style={{
+                    color: result.color === 'black' ? '#ccc' : result.color
+                  }}>
+                    {result.number}
+                  </strong>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      );
     }
 
     ReactDOM.render(<App />, document.getElementById('root'));
