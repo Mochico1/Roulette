@@ -11,9 +11,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
   <style>
-    /* =======================
-       STYLES GLOBAUX
-       ======================= */
+    /* ======= Styles de base ======= */
     body {
       margin: 0;
       padding: 0;
@@ -22,37 +20,31 @@
       color: #fff;
       text-align: center;
     }
-
-    /* =======================
-       CONTENEUR PRINCIPAL
-       ======================= */
     .container {
       margin: 50px auto;
       width: 400px;
       position: relative;
     }
 
-    /* =======================
-       ROUE + POINTEUR
-       ======================= */
+    /* ======= La zone de la roulette ======= */
     .roulette-wrapper {
       position: relative;
       width: 300px;
       height: 300px;
       margin: 0 auto 20px auto;
     }
-
+    /* La roue elle-même */
     .wheel {
-      position: absolute;
-      width: 100%;
-      height: 100%;
+      position: relative;
+      width: 300px;
+      height: 300px;
       border: 5px solid gold;
       border-radius: 50%;
       overflow: hidden;
       background: #333;
+      margin: 0 auto;
     }
-
-    /* Le pointeur est fixe tout en haut ; la roue tourne en-dessous */
+    /* Le pointeur fixe en haut */
     .pointer {
       position: absolute;
       top: -20px;
@@ -66,9 +58,7 @@
       z-index: 10;
     }
 
-    /* =======================
-       CASES/SECTEURS
-       ======================= */
+    /* ======= Les secteurs (numéros) ======= */
     .sector {
       position: absolute;
       width: 50%;
@@ -88,13 +78,12 @@
       font-weight: bold;
       font-size: 14px;
     }
+    /* Le nombre texte, qu'on « tourne » pour qu'il soit horizontal */
     .sector-number {
       transform: rotate(-90deg);
     }
 
-    /* =======================
-       BOUTON + RÉSULTAT
-       ======================= */
+    /* ======= Bouton + zone de résultat ======= */
     .spin-btn {
       padding: 12px 24px;
       background: gold;
@@ -119,22 +108,21 @@
       box-shadow: none;
       transform: none;
     }
-
     .result {
       margin-top: 10px;
       font-size: 22px;
-      height: 28px; /* Évite le saut quand vide */
+      height: 28px; /* évite les sauts quand vide */
     }
   </style>
 </head>
 <body>
   <div id="root"></div>
-  
+
   <script type="text/babel">
-    /*******************************************
+    /********************************************
      * Tableau de 37 cases (roulette européenne):
-     * 0 (vert), puis 1..36 alternés rouge/noir.
-     *******************************************/
+     * 0 (vert), 1..36 (alternance rouge/noir).
+     ********************************************/
     const sectorsData = [
       { number: 0, color: 'green' },
       { number: 1, color: 'red' },
@@ -175,63 +163,61 @@
       { number: 36, color: 'red' },
     ];
 
-    // Chaque case a un angle d'environ 360/37 ≈ 9.7297°
+    // Angle d'un secteur = 360° / 37 ≈ 9.7297°
     const sectorAngle = 360 / sectorsData.length;
 
     function Roulette() {
+      // Référence vers l'élément DOM de la roue
+      const wheelRef = React.useRef(null);
+
       const [isSpinning, setIsSpinning] = React.useState(false);
-      const [currentRotation, setCurrentRotation] = React.useState(0);
+      const [totalRotation, setTotalRotation] = React.useState(0); // Cumule l'angle
       const [result, setResult] = React.useState(null);
 
       function spinWheel() {
         if (isSpinning) return;
-
         setIsSpinning(true);
         setResult(null);
 
-        // Calcule un sector aléatoire (0..36)
+        // On choisit un secteur aléatoire (0..36)
         const randomSector = Math.floor(Math.random() * sectorsData.length);
 
-        // On veut faire plusieurs tours complets + l'offset nécessaire
-        // Ex: 5 tours complets = 5 * 360 = 1800
+        // On veut faire par ex. 5 tours complets = 5 * 360 = 1800
         const fullTurns = 360 * 5;
 
-        // L'angle final pour que la case randomSector soit sous le pointeur
-        // => - (randomSector * sectorAngle) (roue tourne dans le sens inverse)
-        const finalRotation = currentRotation + fullTurns 
-                            - (randomSector * sectorAngle);
+        // L'angle final pour que la case randomSector atterrisse en haut
+        // => on tourne la roue dans le sens inverse, donc "- (randomSector * sectorAngle)"
+        const finalRotation = totalRotation + fullTurns - (randomSector * sectorAngle);
 
-        // Lance l'animation de currentRotation à finalRotation
-        gsap.to({}, {
+        // Animation avec GSAP, de l'angle actuel vers l'angle final
+        gsap.to(wheelRef.current, {
+          rotation: finalRotation,
           duration: 5,
-          onUpdate: (anim) => {
-            const progress = anim.progress(); // Valeur de 0 à 1
-            const newAngle = currentRotation + (finalRotation - currentRotation) * progress;
-            setCurrentRotation(newAngle);
-          },
+          ease: "power2.out",
+          transformOrigin: "50% 50%", // Centre de la roue
           onComplete: () => {
-            setCurrentRotation(finalRotation);
+            // On mémorise l'angle final dans le state
+            setTotalRotation(finalRotation);
             setIsSpinning(false);
+            // Affiche le numéro gagnant
             setResult(sectorsData[randomSector]);
-          },
-          ease: 'power2.out'
+          }
         });
       }
 
       return (
         <div className="container">
           <h1>🎡 Roulette Européenne</h1>
+          
           <div className="roulette-wrapper">
             {/* Pointeur fixe */}
             <div className="pointer"></div>
 
-            {/* Roue qui tourne */}
-            <div 
-              className="wheel"
-              style={{ transform: `rotate(${currentRotation}deg)` }}
-            >
+            {/* Roue animée par GSAP */}
+            <div ref={wheelRef} className="wheel">
+              {/* On crée un <div> secteur pour chaque case */}
               {sectorsData.map((sec, index) => {
-                const rotateDeg = index * sectorAngle;
+                const rotateDeg = index * sectorAngle; // angle du secteur
                 return (
                   <div
                     key={index}
@@ -239,7 +225,7 @@
                     style={{
                       transform: `rotate(${rotateDeg}deg)`,
                       backgroundColor: sec.color,
-                      color: sec.color === 'black' ? 'white' : 'black'
+                      color: sec.color === 'black' ? '#fff' : '#000'
                     }}
                   >
                     <div className="sector-number">{sec.number}</div>
@@ -260,7 +246,7 @@
           <div className="result">
             {result && (
               <div>
-                Résultat : 
+                Résultat :&nbsp;
                 <strong style={{ color: result.color === 'black' ? '#ccc' : result.color }}>
                   {result.number}
                 </strong>
