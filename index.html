@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crash Runner - Casino</title>
+    <title>Crash Runner - Casino Réaliste</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            background: linear-gradient(135deg, #0d1b38, #1e3c72);
             color: #fff;
             margin: 0;
             padding: 10px;
@@ -16,34 +16,38 @@
             align-items: flex-start;
             min-height: 100vh;
             box-sizing: border-box;
+            overflow: hidden;
         }
         #game-container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 10px;
-            padding: 15px;
+            background:rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 20px;
             width: 100%;
-            max-width: 320px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            max-width: 340px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
             text-align: center;
             box-sizing: border-box;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         #multiplier {
-            font-size: 32px;
+            font-size: 36px;
             font-weight: bold;
             color: #ffd700;
             margin: 10px 0;
-            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.7), 0 0 20px rgba(255, 215, 0, 0.3);
         }
         #status, #probability {
-            font-size: 12px;
+            font-size: 14px;
             margin: 5px 0;
-            color: #e0e0e0;
+            color: #d0e4ff;
+            text-shadow: 0 0 5px rgba(208, 228, 255, 0.5);
         }
         #wallet {
-            font-size: 12px;
+            font-size: 14px;
             color: #00e676;
             margin: 5px 0;
+            text-shadow: 0 0 5px rgba(0, 230, 118, 0.5);
         }
         #bet-container {
             margin: 10px 0;
@@ -53,25 +57,28 @@
             gap: 10px;
         }
         input[type="number"] {
-            padding: 5px;
-            font-size: 12px;
-            width: 70px;
+            padding: 6px;
+            font-size: 14px;
+            width: 80px;
             border: none;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.15);
             color: #fff;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2);
         }
         button {
-            padding: 6px 12px;
-            font-size: 12px;
+            padding: 8px 15px;
+            font-size: 14px;
             margin: 5px;
             cursor: pointer;
             border: none;
-            border-radius: 15px;
-            transition: transform 0.2s;
+            border-radius: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
         }
         button:hover:not(:disabled) {
             transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
         }
         button#start {
             background: linear-gradient(45deg, #4caf50, #81c784);
@@ -80,40 +87,47 @@
             background: linear-gradient(45deg, #ff9800, #ffb300);
         }
         button:disabled {
-            background: #666;
+            background: #555;
             cursor: not-allowed;
+            box-shadow: none;
         }
         #game-canvas {
-            border-radius: 5px;
-            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            background: linear-gradient(180deg, #0d1b38, #2a5298);
             width: 100%;
-            height: 120px;
-            margin: 10px 0;
+            height: 150px;
+            margin: 15px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         #history {
-            font-size: 10px;
+            font-size: 12px;
             color: #b0bec5;
-            max-height: 60px;
+            max-height: 70px;
             overflow-y: auto;
             margin-top: 10px;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 5px;
+            border-radius: 5px;
         }
         h1 {
-            font-size: 18px;
-            margin: 0 0 10px 0;
+            font-size: 20px;
+            margin: 0 0 15px 0;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
         }
         @media (max-width: 360px) {
             #game-container {
-                padding: 10px;
+                padding: 15px;
             }
             #multiplier {
-                font-size: 28px;
+                font-size: 30px;
             }
             button {
-                padding: 5px 10px;
-                font-size: 10px;
+                padding: 6px 12px;
+                font-size: 12px;
             }
             input[type="number"] {
-                width: 60px;
+                width: 70px;
             }
         }
     </style>
@@ -123,7 +137,7 @@
         <h1>Crash Runner</h1>
         <div id="wallet">Portefeuille : 100.00€</div>
         <div id="multiplier">1.00x</div>
-        <canvas id="game-canvas" width="280" height="120"></canvas>
+        <canvas id="game-canvas" width="300" height="150"></canvas>
         <div id="status">Placez votre mise pour commencer.</div>
         <div id="probability">Probabilité de crash : 0%</div>
         <div id="bet-container">
@@ -145,13 +159,14 @@
         let winnings = 0;
         let wallet = 100.0;
         let horseX = 0;
+        let horseFrame = 0; // Animation des pattes
         let curvePoints = [];
         let gameCount = 0;
         let earlyCashouts = 0;
         let penaltyGames = 0;
-        let rocketY = -30; // Position initiale de la fusée
-        let explosion = false; // État de l’explosion
-        let explosionParticles = []; // Particules de l’explosion
+        let rocketY = -50; // Fusée commence plus haut
+        let explosion = false;
+        let explosionParticles = [];
 
         const canvas = document.getElementById("game-canvas");
         const ctx = canvas.getContext("2d");
@@ -197,14 +212,14 @@
         // Générer particules d’explosion
         function createExplosion(x, y) {
             explosion = true;
-            for (let i = 0; i < 20; i++) {
+            for (let i = 0; i < 30; i++) {
                 explosionParticles.push({
                     x: x,
                     y: y,
-                    vx: (Math.random() - 0.5) * 6, // Vitesse horizontale
-                    vy: (Math.random() - 0.5) * 6, // Vitesse verticale
-                    size: Math.random() * 5 + 2,
-                    life: 20 // Durée de vie en frames
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    size: Math.random() * 6 + 3,
+                    life: 30
                 });
             }
         }
@@ -216,7 +231,7 @@
                 p.x += p.vx;
                 p.y += p.vy;
                 p.life--;
-                p.size *= 0.95; // Réduction progressive
+                p.size *= 0.9;
             });
         }
 
@@ -224,52 +239,91 @@
         function drawScene() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // Ciel étoilé
+            ctx.fillStyle = "#0d1b38";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < 20; i++) {
+                ctx.fillStyle = "rgba(255, 255, 255, " + (Math.random() * 0.5 + 0.5) + ")";
+                ctx.beginPath();
+                ctx.arc(Math.random() * canvas.width, Math.random() * 80, Math.random() * 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
             // Courbe
             ctx.beginPath();
             ctx.strokeStyle = "#ffd700";
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
             ctx.moveTo(0, canvas.height);
             curvePoints.forEach((point, i) => {
-                ctx.lineTo(i * 1.5, canvas.height - Math.min(point * 12, canvas.height));
+                ctx.lineTo(i * 1.5, canvas.height - Math.min(point * 15, canvas.height));
             });
             ctx.stroke();
 
-            // Sol
-            ctx.fillStyle = "#8BC34A";
-            ctx.fillRect(0, 80, canvas.width, 40);
-
-            // Cheval
-            if (!explosion) {
-                ctx.fillStyle = "#795548";
-                ctx.fillRect(horseX % canvas.width, 60, 25, 15);
-                ctx.fillRect((horseX - 8) % canvas.width, 65, 6, 10);
-                ctx.fillStyle = "#000";
-                ctx.fillRect((horseX + 25) % canvas.width, 65, 6, 10);
+            // Sol texturé
+            ctx.fillStyle = "#4CAF50";
+            ctx.fillRect(0, 100, canvas.width, 50);
+            ctx.fillStyle = "rgba(139, 195, 74, 0.5)";
+            for (let i = 0; i < canvas.width; i += 10) {
+                ctx.fillRect(i, 100, 5, 50);
             }
 
-            // Fusée détaillée (si crash)
-            if (isCrashed && rocketY < 60) {
-                rocketY += 5; // Chute
+            // Cheval animé
+            if (!explosion) {
+                const hx = horseX % canvas.width;
+                ctx.fillStyle = "#5D4037";
+                ctx.fillRect(hx, 70, 30, 20); // Corps
+                ctx.fillStyle = "#3E2723";
+                ctx.fillRect(hx - 10, 80, 10, 10); // Queue
+                ctx.fillRect(hx + 30, 75, 10, 15); // Tête
+                // Pattes (animation simple)
+                ctx.fillStyle = "#4E342E";
+                const legOffset = (horseFrame % 2 === 0) ? 5 : 0;
+                ctx.fillRect(hx + 5, 90, 5, 10 + legOffset); // Avant
+                ctx.fillRect(hx + 20, 90, 5, 10 - legOffset); // Arrière
+            }
+
+            // Fusée détaillée
+            if (isCrashed && rocketY < 70) {
+                rocketY += 2; // Chute plus lente
             }
             if (isCrashed && !explosion) {
-                const rocketX = (horseX % canvas.width) + 5;
-                ctx.fillStyle = "#F44336";
-                ctx.fillRect(rocketX, rocketY - 20, 15, 30); // Corps
-                ctx.beginPath();
-                ctx.moveTo(rocketX + 7.5, rocketY - 20);
-                ctx.lineTo(rocketX + 15, rocketY - 30);
-                ctx.lineTo(rocketX, rocketY - 30);
-                ctx.fill(); // Pointe
+                const rx = (horseX % canvas.width) + 5;
+                // Corps
                 ctx.fillStyle = "#B0BEC5";
-                ctx.fillRect(rocketX - 5, rocketY - 5, 5, 10); // Aileron gauche
-                ctx.fillRect(rocketX + 15, rocketY - 5, 5, 10); // Aileron droit
+                ctx.fillRect(rx, rocketY - 30, 20, 40);
+                // Pointe
+                ctx.fillStyle = "#F44336";
+                ctx.beginPath();
+                ctx.moveTo(rx + 10, rocketY - 40);
+                ctx.lineTo(rx + 20, rocketY - 20);
+                ctx.lineTo(rx, rocketY - 20);
+                ctx.fill();
+                // Ailerons
+                ctx.fillStyle = "#78909C";
+                ctx.beginPath();
+                ctx.moveTo(rx - 5, rocketY);
+                ctx.lineTo(rx + 5, rocketY - 10);
+                ctx.lineTo(rx + 5, rocketY + 5);
+                ctx.fill(); // Gauche
+                ctx.beginPath();
+                ctx.moveTo(rx + 25, rocketY);
+                ctx.lineTo(rx + 15, rocketY - 10);
+                ctx.lineTo(rx + 15, rocketY + 5);
+                ctx.fill(); // Droit
+                // Flammes
+                ctx.fillStyle = `rgba(255, 152, 0, ${Math.random() * 0.5 + 0.5})`;
+                ctx.beginPath();
+                ctx.moveTo(rx + 5, rocketY);
+                ctx.lineTo(rx + 15, rocketY);
+                ctx.lineTo(rx + 10, rocketY + 10 + Math.random() * 5);
+                ctx.fill();
             }
 
             // Explosion
             if (explosion) {
                 updateExplosion();
                 explosionParticles.forEach(p => {
-                    ctx.fillStyle = `rgba(255, ${Math.random() * 100 + 100}, 0, ${p.life / 20})`;
+                    ctx.fillStyle = `rgba(255, ${Math.random() * 100 + 150}, 0, ${p.life / 30})`;
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
                     ctx.fill();
@@ -293,7 +347,8 @@
             isCrashed = false;
             isRunning = true;
             horseX = 0;
-            rocketY = -30;
+            horseFrame = 0;
+            rocketY = -50;
             explosion = false;
             explosionParticles = [];
             curvePoints = [multiplier];
@@ -311,6 +366,7 @@
                 } else {
                     multiplier += 0.05;
                     horseX += 2;
+                    horseFrame++;
                     curvePoints.push(multiplier);
                     if (curvePoints.length > 200) curvePoints.shift();
                     multiplierDisplay.textContent = `${multiplier.toFixed(2)}x`;
@@ -332,20 +388,19 @@
             startButton.disabled = false;
             betInput.disabled = false;
 
-            // Animation fusée puis explosion
             let fallInterval = setInterval(() => {
                 drawScene();
-                if (rocketY >= 60) {
+                if (rocketY >= 70) {
                     clearInterval(fallInterval);
-                    createExplosion(horseX % canvas.width + 12.5, 65); // Explosion au centre du cheval
+                    createExplosion((horseX % canvas.width) + 15, 80);
                     setTimeout(() => {
                         explosion = false;
                         ctx.fillStyle = "#F44336";
-                        ctx.fillRect(horseX % canvas.width, 60, 25, 15); // Cheval écrasé
+                        ctx.fillRect(horseX % canvas.width, 70, 30, 20);
                         drawScene();
-                    }, 1000); // Explosion dure 1s
+                    }, 1000);
                 }
-            }, 50);
+            }, 20); // Chute plus fluide
 
             logResult(`Perdu - Mise: ${bet}€, Crash: ${crashPoint.toFixed(2)}x`);
             checkGameOver();
@@ -374,7 +429,7 @@
             startButton.disabled = false;
             betInput.disabled = false;
             ctx.fillStyle = "#FFD700";
-            ctx.fillRect(horseX % canvas.width, 60, 25, 15);
+            ctx.fillRect(horseX % canvas.width, 70, 30, 20);
             logResult(`Gagné - Mise: ${bet}€, Multi: ${multiplier.toFixed(2)}x, Gains: ${winnings.toFixed(2)}€`);
         }
 
