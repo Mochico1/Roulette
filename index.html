@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crash Runner - Mobile</title>
+    <title>Crash Runner - Casino</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -146,6 +146,7 @@
         let wallet = 100.0;
         let horseX = 0;
         let curvePoints = [];
+        let gameCount = 0; // Compteur de parties pour ajuster l'algorithme
 
         const canvas = document.getElementById("game-canvas");
         const ctx = canvas.getContext("2d");
@@ -158,16 +159,26 @@
         const cashoutButton = document.getElementById("cashout");
         const historyDisplay = document.getElementById("history");
 
-        // Générer un crash mesuré (1.1x à 10x)
+        // Générer un crash truqué pour favoriser la maison
         function generateCrashPoint() {
-            return Math.random() * (10 - 1.1) + 1.1;
+            gameCount++;
+            const random = Math.random();
+            // 70% de chance de crash entre 1.1x et 3x (petites victoires fréquentes)
+            // 25% entre 3x et 5x (victoires modérées)
+            // 5% au-delà de 5x (gros gains rares)
+            if (random < 0.7 || gameCount % 10 === 0) { // Forcer un crash bas sauf 1 fois sur 10
+                return 1.1 + random * 1.9; // 1.1x à 3x
+            } else if (random < 0.95) {
+                return 3 + random * 2; // 3x à 5x
+            } else {
+                return 5 + random * 5; // 5x à 10x (rare)
+            }
         }
 
-        // Calculer la probabilité de crash
+        // Calculer une probabilité affichée (illusion)
         function calculateCrashProbability() {
             const maxCrash = 10;
-            if (multiplier >= maxCrash) return 100;
-            return Math.min(100, ((multiplier - 1.1) / (maxCrash - 1.1)) * 100);
+            return Math.min(100, ((multiplier - 1) / (maxCrash - 1)) * 80); // Légère sous-estimation pour rassurer
         }
 
         // Dessiner la scène
@@ -188,7 +199,7 @@
             ctx.fillStyle = "#8BC34A";
             ctx.fillRect(0, 80, canvas.width, 40);
 
-            // Cheval (course infinie)
+            // Cheval
             ctx.fillStyle = "#795548";
             ctx.fillRect(horseX % canvas.width, 60, 25, 15);
             ctx.fillRect((horseX - 8) % canvas.width, 65, 6, 10);
@@ -226,7 +237,7 @@
                     crash();
                 } else {
                     multiplier += 0.05;
-                    horseX += 2; // Course infinie
+                    horseX += 2;
                     curvePoints.push(multiplier);
                     if (curvePoints.length > 200) curvePoints.shift();
                     multiplierDisplay.textContent = `${multiplier.toFixed(2)}x`;
@@ -243,7 +254,7 @@
             isRunning = false;
             clearInterval(interval);
             multiplierDisplay.textContent = `CRASH à ${crashPoint.toFixed(2)}x`;
-            statusDisplay.textContent = `Le cheval s'est écrasé !`;
+            statusDisplay.textContent = "Dommage, presque ! Réessaie ?";
             cashoutButton.disabled = true;
             startButton.disabled = false;
             betInput.disabled = false;
@@ -262,7 +273,7 @@
             winnings = bet * multiplier;
             wallet += winnings;
             walletDisplay.textContent = `Portefeuille : ${wallet.toFixed(2)}€`;
-            statusDisplay.textContent = `Gagné ! ${winnings.toFixed(2)}€`;
+            statusDisplay.textContent = `Super ! ${winnings.toFixed(2)}€ gagnés !`;
             cashoutButton.disabled = true;
             startButton.disabled = false;
             betInput.disabled = false;
@@ -274,7 +285,7 @@
         // Vérifier fin de jeu
         function checkGameOver() {
             if (wallet <= 0) {
-                statusDisplay.textContent = "Portefeuille vide ! Fin du jeu.";
+                statusDisplay.textContent = "Portefeuille vide ! Merci d’avoir joué !";
                 startButton.disabled = true;
                 betInput.disabled = true;
             }
