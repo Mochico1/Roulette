@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crash Sauveteur - Design Avancé</title>
+    <title>Crash Sauveteur - Mobile</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -14,57 +14,59 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
         }
         #game-container {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 30px;
-            width: 700px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            width: 100%;
+            max-width: 350px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             text-align: center;
         }
         #multiplier {
-            font-size: 60px;
+            font-size: 36px;
             font-weight: bold;
             color: #ffd700;
-            margin: 20px 0;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            margin: 10px 0;
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
         }
-        #status {
-            font-size: 20px;
-            margin: 15px 0;
+        #status, #probability {
+            font-size: 14px;
+            margin: 5px 0;
             color: #e0e0e0;
         }
         #wallet {
-            font-size: 18px;
+            font-size: 14px;
             color: #00e676;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         #bet-container {
-            margin: 20px 0;
+            margin: 10px 0;
         }
         input[type="number"] {
-            padding: 8px;
-            font-size: 16px;
-            width: 100px;
+            padding: 5px;
+            font-size: 14px;
+            width: 80px;
             border: none;
             border-radius: 5px;
             background: rgba(255, 255, 255, 0.2);
             color: #fff;
         }
         button {
-            padding: 12px 25px;
-            font-size: 16px;
-            margin: 10px;
+            padding: 8px 15px;
+            font-size: 14px;
+            margin: 5px;
             cursor: pointer;
             border: none;
-            border-radius: 25px;
-            transition: transform 0.2s, box-shadow 0.2s;
+            border-radius: 20px;
+            transition: transform 0.2s;
         }
         button:hover:not(:disabled) {
             transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
         button#start {
             background: linear-gradient(45deg, #4caf50, #81c784);
@@ -77,26 +79,41 @@
             cursor: not-allowed;
         }
         #game-canvas {
-            border-radius: 10px;
+            border-radius: 5px;
             background: rgba(0, 0, 0, 0.2);
-            margin: 20px 0;
+            width: 100%;
+            height: 150px;
+            margin: 10px 0;
         }
         #history {
-            margin-top: 20px;
-            font-size: 14px;
+            font-size: 12px;
             color: #b0bec5;
-            max-height: 100px;
+            max-height: 80px;
             overflow-y: auto;
+            margin-top: 10px;
+        }
+        @media (max-width: 400px) {
+            #game-container {
+                padding: 10px;
+            }
+            #multiplier {
+                font-size: 28px;
+            }
+            button {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
         }
     </style>
 </head>
 <body>
     <div id="game-container">
-        <h1>Crash Sauveteur</h1>
+        <h1 style="font-size: 20px; margin: 0;">Crash Sauveteur</h1>
         <div id="wallet">Portefeuille : 100.00€</div>
         <div id="multiplier">1.00x</div>
-        <canvas id="game-canvas" width="600" height="250"></canvas>
+        <canvas id="game-canvas" width="300" height="150"></canvas>
         <div id="status">Placez votre mise pour commencer.</div>
+        <div id="probability">Probabilité de crash : 0%</div>
         <div id="bet-container">
             <label>Mise (€) : </label>
             <input type="number" id="bet" min="1" max="100" value="10">
@@ -114,7 +131,7 @@
         let interval;
         let bet = 0;
         let winnings = 0;
-        let wallet = 100.0; // Portefeuille initial
+        let wallet = 100.0;
         let horseX = 0;
         let curvePoints = [];
 
@@ -122,48 +139,56 @@
         const ctx = canvas.getContext("2d");
         const multiplierDisplay = document.getElementById("multiplier");
         const statusDisplay = document.getElementById("status");
+        const probabilityDisplay = document.getElementById("probability");
         const walletDisplay = document.getElementById("wallet");
         const betInput = document.getElementById("bet");
         const startButton = document.getElementById("start");
         const cashoutButton = document.getElementById("cashout");
         const historyDisplay = document.getElementById("history");
 
-        // Générer un crash mesuré (entre 1.1x et 10x)
+        // Générer un crash mesuré (1.1x à 10x)
         function generateCrashPoint() {
-            return Math.random() * (10 - 1.1) + 1.1; // Plage contrôlée
+            return Math.random() * (10 - 1.1) + 1.1;
+        }
+
+        // Calculer la probabilité de crash (approximation)
+        function calculateCrashProbability() {
+            const maxCrash = 10;
+            if (multiplier >= maxCrash) return 100;
+            return Math.min(100, ((multiplier - 1.1) / (maxCrash - 1.1)) * 100);
         }
 
         // Dessiner la scène
         function drawScene() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Courbe du multiplicateur
+            // Courbe
             ctx.beginPath();
             ctx.strokeStyle = "#ffd700";
             ctx.lineWidth = 2;
             ctx.moveTo(0, canvas.height);
             curvePoints.forEach((point, i) => {
-                ctx.lineTo(i * 2, canvas.height - point * 20);
+                ctx.lineTo(i * 1.5, canvas.height - point * 15);
             });
             ctx.stroke();
 
             // Sol
             ctx.fillStyle = "#8BC34A";
-            ctx.fillRect(0, 200, canvas.width, 50);
+            ctx.fillRect(0, 100, canvas.width, 50);
 
             // Princesse
             ctx.fillStyle = "#F06292";
-            ctx.fillRect(550, 150, 20, 50);
+            ctx.fillRect(270, 50, 15, 50);
             ctx.beginPath();
-            ctx.arc(560, 140, 10, 0, Math.PI * 2);
+            ctx.arc(277.5, 45, 7, 0, Math.PI * 2);
             ctx.fill();
 
-            // Cheval (sprite simplifié)
+            // Cheval (course infinie)
             ctx.fillStyle = "#795548";
-            ctx.fillRect(horseX, 170, 40, 30);
-            ctx.fillRect(horseX - 10, 180, 10, 20);
+            ctx.fillRect(horseX % canvas.width, 70, 30, 20);
+            ctx.fillRect((horseX - 10) % canvas.width, 80, 8, 15);
             ctx.fillStyle = "#000";
-            ctx.fillRect(horseX + 40, 180, 10, 20);
+            ctx.fillRect((horseX + 30) % canvas.width, 80, 8, 15);
         }
 
         // Démarrer le jeu
@@ -185,7 +210,8 @@
             curvePoints = [multiplier];
             crashPoint = generateCrashPoint();
             multiplierDisplay.textContent = "1.00x";
-            statusDisplay.textContent = "Le cheval galope vers la princesse...";
+            statusDisplay.textContent = "Le cheval galope...";
+            probabilityDisplay.textContent = "Probabilité de crash : 0%";
             startButton.disabled = true;
             cashoutButton.disabled = false;
             betInput.disabled = true;
@@ -195,11 +221,11 @@
                     crash();
                 } else {
                     multiplier += 0.05;
-                    horseX += 2.5;
-                    if (horseX > canvas.width - 50) horseX = canvas.width - 50;
+                    horseX += 2; // Course infinie
                     curvePoints.push(multiplier);
-                    if (curvePoints.length > 300) curvePoints.shift();
+                    if (curvePoints.length > 200) curvePoints.shift();
                     multiplierDisplay.textContent = `${multiplier.toFixed(2)}x`;
+                    probabilityDisplay.textContent = `Probabilité de crash : ${calculateCrashProbability().toFixed(1)}%`;
                     drawScene();
                 }
             }, 50);
@@ -217,7 +243,7 @@
             startButton.disabled = false;
             betInput.disabled = false;
             ctx.fillStyle = "#F44336";
-            ctx.fillRect(horseX, 170, 40, 30);
+            ctx.fillRect(horseX % canvas.width, 70, 30, 20);
             logResult(`Perdu - Mise: ${bet}€, Crash: ${crashPoint.toFixed(2)}x`);
             checkGameOver();
         }
@@ -231,12 +257,12 @@
             winnings = bet * multiplier;
             wallet += winnings;
             walletDisplay.textContent = `Portefeuille : ${wallet.toFixed(2)}€`;
-            statusDisplay.textContent = `Princesse sauvée ! ${winnings.toFixed(2)}€ à ${multiplier.toFixed(2)}x`;
+            statusDisplay.textContent = `Princesse sauvée ! ${winnings.toFixed(2)}€`;
             cashoutButton.disabled = true;
             startButton.disabled = false;
             betInput.disabled = false;
             ctx.fillStyle = "#FFD700";
-            ctx.fillRect(550, 150, 20, 50);
+            ctx.fillRect(270, 50, 15, 50);
             logResult(`Gagné - Mise: ${bet}€, Multi: ${multiplier.toFixed(2)}x, Gains: ${winnings.toFixed(2)}€`);
         }
 
