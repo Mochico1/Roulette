@@ -147,6 +147,8 @@
         let horseX = 0;
         let curvePoints = [];
         let gameCount = 0;
+        let earlyCashouts = 0; // Compte les cashouts avant x1.5
+        let penaltyGames = 0;  // Compte les parties de pénalité (crash immédiat)
 
         const canvas = document.getElementById("game-canvas");
         const ctx = canvas.getContext("2d");
@@ -159,22 +161,28 @@
         const cashoutButton = document.getElementById("cashout");
         const historyDisplay = document.getElementById("history");
 
-        // Générer un crash truqué avec gros gains initiaux
+        // Générer un crash truqué
         function generateCrashPoint() {
             gameCount++;
-            const random = Math.random();
 
+            // Pénalité : crash immédiat si trop de cashouts avant x1.5
+            if (penaltyGames > 0) {
+                penaltyGames--;
+                return 1.0; // Crash instantané
+            }
+
+            const random = Math.random();
             if (gameCount === 1) {
-                return 20; // Premier coup : x20 garanti
+                return 20; // x20 garanti
             } else if (gameCount === 2) {
-                return 15; // Deuxième coup : x15 garanti
-            } else if (random < 0.01 && gameCount > 10) { // 1% de chance d’un gros gain après 10 parties
-                return 100 + random * 20; // x100 à x120 (rare)
-            } else if (random < 0.6) { // 60% de crashs bas
+                return 15; // x15 garanti
+            } else if (random < 0.01 && gameCount > 10) { // 1% chance après 10 parties
+                return 100 + random * 20; // x100 à x120
+            } else if (random < 0.6) { // 60% crashs bas
                 return 1.1 + random * 1.9; // 1.1x à 3x
-            } else if (random < 0.9) { // 30% de crashs moyens
+            } else if (random < 0.9) { // 30% crashs moyens
                 return 3 + random * 2; // 3x à 5x
-            } else { // 9% de crashs modérés
+            } else { // 9% crashs modérés
                 return 5 + random * 5; // 5x à 10x
             }
         }
@@ -182,7 +190,7 @@
         // Probabilité affichée (illusion)
         function calculateCrashProbability() {
             const maxCrash = 120;
-            return Math.min(100, ((multiplier - 1) / (maxCrash - 1)) * 70); // Sous-estimée pour l’espoir
+            return Math.min(100, ((multiplier - 1) / (maxCrash - 1)) * 70);
         }
 
         // Dessiner la scène
@@ -258,7 +266,7 @@
             isRunning = false;
             clearInterval(interval);
             multiplierDisplay.textContent = `CRASH à ${crashPoint.toFixed(2)}x`;
-            statusDisplay.textContent = "Pas de chance ! Tente encore ?";
+            statusDisplay.textContent = crashPoint === 1.0 ? "Crash instantané ! Oups !" : "Pas de chance ! Tente encore ?";
             cashoutButton.disabled = true;
             startButton.disabled = false;
             betInput.disabled = false;
@@ -278,6 +286,16 @@
             wallet += winnings;
             walletDisplay.textContent = `Portefeuille : ${wallet.toFixed(2)}€`;
             statusDisplay.textContent = `Génial ! ${winnings.toFixed(2)}€ gagnés !`;
+
+            // Vérifier cashout avant x1.5
+            if (multiplier < 1.5) {
+                earlyCashouts++;
+                if (earlyCashouts > 3) {
+                    penaltyGames = 3; // 3 crashs immédiats suivants
+                    earlyCashouts = 0; // Réinitialiser après pénalité
+                }
+            }
+
             cashoutButton.disabled = true;
             startButton.disabled = false;
             betInput.disabled = false;
