@@ -149,7 +149,9 @@
         let gameCount = 0;
         let earlyCashouts = 0;
         let penaltyGames = 0;
-        let rocketY = -20; // Position initiale de la fusée (hors écran)
+        let rocketY = -30; // Position initiale de la fusée
+        let explosion = false; // État de l’explosion
+        let explosionParticles = []; // Particules de l’explosion
 
         const canvas = document.getElementById("game-canvas");
         const ctx = canvas.getContext("2d");
@@ -192,6 +194,32 @@
             return Math.min(100, ((multiplier - 1) / (maxCrash - 1)) * 70);
         }
 
+        // Générer particules d’explosion
+        function createExplosion(x, y) {
+            explosion = true;
+            for (let i = 0; i < 20; i++) {
+                explosionParticles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 6, // Vitesse horizontale
+                    vy: (Math.random() - 0.5) * 6, // Vitesse verticale
+                    size: Math.random() * 5 + 2,
+                    life: 20 // Durée de vie en frames
+                });
+            }
+        }
+
+        // Mettre à jour les particules
+        function updateExplosion() {
+            explosionParticles = explosionParticles.filter(p => p.life > 0);
+            explosionParticles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                p.size *= 0.95; // Réduction progressive
+            });
+        }
+
         // Dessiner la scène
         function drawScene() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -211,24 +239,41 @@
             ctx.fillRect(0, 80, canvas.width, 40);
 
             // Cheval
-            ctx.fillStyle = "#795548";
-            ctx.fillRect(horseX % canvas.width, 60, 25, 15);
-            ctx.fillRect((horseX - 8) % canvas.width, 65, 6, 10);
-            ctx.fillStyle = "#000";
-            ctx.fillRect((horseX + 25) % canvas.width, 65, 6, 10);
-
-            // Fusée (si crash)
-            if (isCrashed && rocketY < 60) {
-                rocketY += 5; // Chute de la fusée
+            if (!explosion) {
+                ctx.fillStyle = "#795548";
+                ctx.fillRect(horseX % canvas.width, 60, 25, 15);
+                ctx.fillRect((horseX - 8) % canvas.width, 65, 6, 10);
+                ctx.fillStyle = "#000";
+                ctx.fillRect((horseX + 25) % canvas.width, 65, 6, 10);
             }
-            if (isCrashed) {
+
+            // Fusée détaillée (si crash)
+            if (isCrashed && rocketY < 60) {
+                rocketY += 5; // Chute
+            }
+            if (isCrashed && !explosion) {
+                const rocketX = (horseX % canvas.width) + 5;
                 ctx.fillStyle = "#F44336";
-                ctx.fillRect((horseX % canvas.width) + 5, rocketY - 20, 15, 30); // Corps fusée
+                ctx.fillRect(rocketX, rocketY - 20, 15, 30); // Corps
                 ctx.beginPath();
-                ctx.moveTo((horseX % canvas.width) + 12.5, rocketY - 20);
-                ctx.lineTo((horseX % canvas.width) + 20, rocketY - 30);
-                ctx.lineTo((horseX % canvas.width) + 5, rocketY - 30);
-                ctx.fill(); // Pointe fusée
+                ctx.moveTo(rocketX + 7.5, rocketY - 20);
+                ctx.lineTo(rocketX + 15, rocketY - 30);
+                ctx.lineTo(rocketX, rocketY - 30);
+                ctx.fill(); // Pointe
+                ctx.fillStyle = "#B0BEC5";
+                ctx.fillRect(rocketX - 5, rocketY - 5, 5, 10); // Aileron gauche
+                ctx.fillRect(rocketX + 15, rocketY - 5, 5, 10); // Aileron droit
+            }
+
+            // Explosion
+            if (explosion) {
+                updateExplosion();
+                explosionParticles.forEach(p => {
+                    ctx.fillStyle = `rgba(255, ${Math.random() * 100 + 100}, 0, ${p.life / 20})`;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
             }
         }
 
@@ -248,7 +293,9 @@
             isCrashed = false;
             isRunning = true;
             horseX = 0;
-            rocketY = -20; // Réinitialiser la fusée
+            rocketY = -30;
+            explosion = false;
+            explosionParticles = [];
             curvePoints = [multiplier];
             crashPoint = generateCrashPoint();
             multiplierDisplay.textContent = "1.00x";
@@ -284,11 +331,22 @@
             cashoutButton.disabled = true;
             startButton.disabled = false;
             betInput.disabled = false;
-            drawScene(); // Dessiner la fusée qui tombe
-            setTimeout(() => {
-                ctx.fillStyle = "#F44336";
-                ctx.fillRect(horseX % canvas.width, 60, 25, 15); // Cheval écrasé après animation
-            }, 500); // Délai pour voir la fusée tomber
+
+            // Animation fusée puis explosion
+            let fallInterval = setInterval(() => {
+                drawScene();
+                if (rocketY >= 60) {
+                    clearInterval(fallInterval);
+                    createExplosion(horseX % canvas.width + 12.5, 65); // Explosion au centre du cheval
+                    setTimeout(() => {
+                        explosion = false;
+                        ctx.fillStyle = "#F44336";
+                        ctx.fillRect(horseX % canvas.width, 60, 25, 15); // Cheval écrasé
+                        drawScene();
+                    }, 1000); // Explosion dure 1s
+                }
+            }, 50);
+
             logResult(`Perdu - Mise: ${bet}€, Crash: ${crashPoint.toFixed(2)}x`);
             checkGameOver();
         }
