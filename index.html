@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crash Sauveteur - Mobile</title>
+    <title>Crash Runner - Mobile</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
             background: linear-gradient(135deg, #1e3c72, #2a5298);
             color: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
             margin: 0;
             padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
             box-sizing: border-box;
         }
         #game-container {
@@ -23,46 +23,51 @@
             border-radius: 10px;
             padding: 15px;
             width: 100%;
-            max-width: 350px;
+            max-width: 320px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             text-align: center;
+            box-sizing: border-box;
         }
         #multiplier {
-            font-size: 36px;
+            font-size: 32px;
             font-weight: bold;
             color: #ffd700;
             margin: 10px 0;
             text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
         }
         #status, #probability {
-            font-size: 14px;
+            font-size: 12px;
             margin: 5px 0;
             color: #e0e0e0;
         }
         #wallet {
-            font-size: 14px;
+            font-size: 12px;
             color: #00e676;
-            margin-bottom: 10px;
+            margin: 5px 0;
         }
         #bet-container {
             margin: 10px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
         }
         input[type="number"] {
             padding: 5px;
-            font-size: 14px;
-            width: 80px;
+            font-size: 12px;
+            width: 70px;
             border: none;
             border-radius: 5px;
             background: rgba(255, 255, 255, 0.2);
             color: #fff;
         }
         button {
-            padding: 8px 15px;
-            font-size: 14px;
+            padding: 6px 12px;
+            font-size: 12px;
             margin: 5px;
             cursor: pointer;
             border: none;
-            border-radius: 20px;
+            border-radius: 15px;
             transition: transform 0.2s;
         }
         button:hover:not(:disabled) {
@@ -82,17 +87,21 @@
             border-radius: 5px;
             background: rgba(0, 0, 0, 0.2);
             width: 100%;
-            height: 150px;
+            height: 120px;
             margin: 10px 0;
         }
         #history {
-            font-size: 12px;
+            font-size: 10px;
             color: #b0bec5;
-            max-height: 80px;
+            max-height: 60px;
             overflow-y: auto;
             margin-top: 10px;
         }
-        @media (max-width: 400px) {
+        h1 {
+            font-size: 18px;
+            margin: 0 0 10px 0;
+        }
+        @media (max-width: 360px) {
             #game-container {
                 padding: 10px;
             }
@@ -100,18 +109,21 @@
                 font-size: 28px;
             }
             button {
-                padding: 6px 12px;
-                font-size: 12px;
+                padding: 5px 10px;
+                font-size: 10px;
+            }
+            input[type="number"] {
+                width: 60px;
             }
         }
     </style>
 </head>
 <body>
     <div id="game-container">
-        <h1 style="font-size: 20px; margin: 0;">Crash Sauveteur</h1>
+        <h1>Crash Runner</h1>
         <div id="wallet">Portefeuille : 100.00€</div>
         <div id="multiplier">1.00x</div>
-        <canvas id="game-canvas" width="300" height="150"></canvas>
+        <canvas id="game-canvas" width="280" height="120"></canvas>
         <div id="status">Placez votre mise pour commencer.</div>
         <div id="probability">Probabilité de crash : 0%</div>
         <div id="bet-container">
@@ -151,7 +163,7 @@
             return Math.random() * (10 - 1.1) + 1.1;
         }
 
-        // Calculer la probabilité de crash (approximation)
+        // Calculer la probabilité de crash
         function calculateCrashProbability() {
             const maxCrash = 10;
             if (multiplier >= maxCrash) return 100;
@@ -168,27 +180,20 @@
             ctx.lineWidth = 2;
             ctx.moveTo(0, canvas.height);
             curvePoints.forEach((point, i) => {
-                ctx.lineTo(i * 1.5, canvas.height - point * 15);
+                ctx.lineTo(i * 1.5, canvas.height - point * 12);
             });
             ctx.stroke();
 
             // Sol
             ctx.fillStyle = "#8BC34A";
-            ctx.fillRect(0, 100, canvas.width, 50);
-
-            // Princesse
-            ctx.fillStyle = "#F06292";
-            ctx.fillRect(270, 50, 15, 50);
-            ctx.beginPath();
-            ctx.arc(277.5, 45, 7, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.fillRect(0, 80, canvas.width, 40);
 
             // Cheval (course infinie)
             ctx.fillStyle = "#795548";
-            ctx.fillRect(horseX % canvas.width, 70, 30, 20);
-            ctx.fillRect((horseX - 10) % canvas.width, 80, 8, 15);
+            ctx.fillRect(horseX % canvas.width, 60, 25, 15);
+            ctx.fillRect((horseX - 8) % canvas.width, 65, 6, 10);
             ctx.fillStyle = "#000";
-            ctx.fillRect((horseX + 30) % canvas.width, 80, 8, 15);
+            ctx.fillRect((horseX + 25) % canvas.width, 65, 6, 10);
         }
 
         // Démarrer le jeu
@@ -243,7 +248,7 @@
             startButton.disabled = false;
             betInput.disabled = false;
             ctx.fillStyle = "#F44336";
-            ctx.fillRect(horseX % canvas.width, 70, 30, 20);
+            ctx.fillRect(horseX % canvas.width, 60, 25, 15);
             logResult(`Perdu - Mise: ${bet}€, Crash: ${crashPoint.toFixed(2)}x`);
             checkGameOver();
         }
@@ -257,12 +262,12 @@
             winnings = bet * multiplier;
             wallet += winnings;
             walletDisplay.textContent = `Portefeuille : ${wallet.toFixed(2)}€`;
-            statusDisplay.textContent = `Princesse sauvée ! ${winnings.toFixed(2)}€`;
+            statusDisplay.textContent = `Gagné ! ${winnings.toFixed(2)}€`;
             cashoutButton.disabled = true;
             startButton.disabled = false;
             betInput.disabled = false;
             ctx.fillStyle = "#FFD700";
-            ctx.fillRect(270, 50, 15, 50);
+            ctx.fillRect(horseX % canvas.width, 60, 25, 15);
             logResult(`Gagné - Mise: ${bet}€, Multi: ${multiplier.toFixed(2)}x, Gains: ${winnings.toFixed(2)}€`);
         }
 
