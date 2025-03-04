@@ -146,7 +146,7 @@
         let wallet = 100.0;
         let horseX = 0;
         let curvePoints = [];
-        let gameCount = 0; // Compteur de parties pour ajuster l'algorithme
+        let gameCount = 0;
 
         const canvas = document.getElementById("game-canvas");
         const ctx = canvas.getContext("2d");
@@ -159,26 +159,30 @@
         const cashoutButton = document.getElementById("cashout");
         const historyDisplay = document.getElementById("history");
 
-        // Générer un crash truqué pour favoriser la maison
+        // Générer un crash truqué avec gros gains initiaux
         function generateCrashPoint() {
             gameCount++;
             const random = Math.random();
-            // 70% de chance de crash entre 1.1x et 3x (petites victoires fréquentes)
-            // 25% entre 3x et 5x (victoires modérées)
-            // 5% au-delà de 5x (gros gains rares)
-            if (random < 0.7 || gameCount % 10 === 0) { // Forcer un crash bas sauf 1 fois sur 10
+
+            if (gameCount === 1) {
+                return 20; // Premier coup : x20 garanti
+            } else if (gameCount === 2) {
+                return 15; // Deuxième coup : x15 garanti
+            } else if (random < 0.01 && gameCount > 10) { // 1% de chance d’un gros gain après 10 parties
+                return 100 + random * 20; // x100 à x120 (rare)
+            } else if (random < 0.6) { // 60% de crashs bas
                 return 1.1 + random * 1.9; // 1.1x à 3x
-            } else if (random < 0.95) {
+            } else if (random < 0.9) { // 30% de crashs moyens
                 return 3 + random * 2; // 3x à 5x
-            } else {
-                return 5 + random * 5; // 5x à 10x (rare)
+            } else { // 9% de crashs modérés
+                return 5 + random * 5; // 5x à 10x
             }
         }
 
-        // Calculer une probabilité affichée (illusion)
+        // Probabilité affichée (illusion)
         function calculateCrashProbability() {
-            const maxCrash = 10;
-            return Math.min(100, ((multiplier - 1) / (maxCrash - 1)) * 80); // Légère sous-estimation pour rassurer
+            const maxCrash = 120;
+            return Math.min(100, ((multiplier - 1) / (maxCrash - 1)) * 70); // Sous-estimée pour l’espoir
         }
 
         // Dessiner la scène
@@ -191,7 +195,7 @@
             ctx.lineWidth = 2;
             ctx.moveTo(0, canvas.height);
             curvePoints.forEach((point, i) => {
-                ctx.lineTo(i * 1.5, canvas.height - point * 12);
+                ctx.lineTo(i * 1.5, canvas.height - Math.min(point * 12, canvas.height));
             });
             ctx.stroke();
 
@@ -254,7 +258,7 @@
             isRunning = false;
             clearInterval(interval);
             multiplierDisplay.textContent = `CRASH à ${crashPoint.toFixed(2)}x`;
-            statusDisplay.textContent = "Dommage, presque ! Réessaie ?";
+            statusDisplay.textContent = "Pas de chance ! Tente encore ?";
             cashoutButton.disabled = true;
             startButton.disabled = false;
             betInput.disabled = false;
@@ -273,7 +277,7 @@
             winnings = bet * multiplier;
             wallet += winnings;
             walletDisplay.textContent = `Portefeuille : ${wallet.toFixed(2)}€`;
-            statusDisplay.textContent = `Super ! ${winnings.toFixed(2)}€ gagnés !`;
+            statusDisplay.textContent = `Génial ! ${winnings.toFixed(2)}€ gagnés !`;
             cashoutButton.disabled = true;
             startButton.disabled = false;
             betInput.disabled = false;
