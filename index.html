@@ -1,503 +1,176 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Roulette Européenne - Timer & Tapis</title>
-  
-  <!-- Références externes : React, ReactDOM, Babel, GSAP -->
-  <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-
-  <!-- Pour un meilleur rendu sur mobile -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <style>
-    /* ===================== RESET / BASE ===================== */
-    * {
-      box-sizing: border-box;
-      margin: 0; 
-      padding: 0;
-    }
-    body {
-      background: radial-gradient(circle, #222, #000);
-      font-family: Arial, sans-serif;
-      color: #fff;
-      text-align: center;
-    }
-
-    .container {
-      max-width: 900px;
-      margin: 20px auto;
-      padding: 10px;
-    }
-    h1 {
-      margin-bottom: 10px;
-    }
-
-    /* ===================== TIMER ===================== */
-    .timer {
-      font-size: 22px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-
-    /* ===================== TAPIS DE MISES ===================== */
-    .tapis-container {
-      background: #006400; /* Vert foncé casino */
-      border: 3px solid #0a5f0a;
-      border-radius: 8px;
-      padding: 10px;
-      margin: 0 auto 20px;
-      max-width: 600px;
-    }
-    .tapis-grid {
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 5px;
-      margin-top: 10px;
-    }
-    .tapis-cell {
-      width: 40px;
-      height: 40px;
-      background: #013201;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      font-weight: bold;
-      cursor: pointer;
-      color: white;
-      border: 2px solid #115511;
-    }
-    .tapis-cell.checked {
-      background: #02a702; 
-      border-color: #0f3;
-    }
-    .zero-cell {
-      background: #004400;
-    }
-    .section-title {
-      margin: 15px 0 5px 0;
-      font-size: 18px;
-    }
-    .options-row {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 15px;
-      margin-top: 10px;
-    }
-    .option-item {
-      display: flex;
-      align-items: center;
-      background: #013201;
-      border-radius: 4px;
-      padding: 5px 10px;
-      cursor: pointer;
-      border: 2px solid #115511;
-    }
-    .option-item input {
-      margin-right: 5px;
-      cursor: pointer;
-    }
-    .option-item.active {
-      background: #02a702; 
-      border-color: #0f3;
-    }
-
-    /* ===================== ROULETTE ===================== */
-    .roulette-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .roulette-wrapper {
-      position: relative;
-      width: 300px;
-      height: 300px;
-      margin-bottom: 15px;
-    }
-    .wheel {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      border: 5px solid gold;
-      border-radius: 50%;
-      background: #333;
-      overflow: hidden;
-    }
-    .pointer {
-      position: absolute;
-      top: -20px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 0;
-      height: 0;
-      border-left: 10px solid transparent;
-      border-right: 10px solid transparent;
-      border-bottom: 20px solid yellow;
-      z-index: 10;
-    }
-    .sector {
-      position: absolute;
-      width: 50%; 
-      height: 50%;
-      left: 50%; 
-      top: 50%;
-      transform-origin: 0 100%;
-      border-top-left-radius: 100%;
-      border-top-right-radius: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      padding-left: 10px;
-      font-weight: bold;
-      font-size: 14px;
-    }
-    .sector-number {
-      transform: rotate(-90deg);
-    }
-
-    /* ===================== RESULTAT ===================== */
-    .result {
-      font-size: 20px;
-      margin-top: 10px;
-      min-height: 28px;
-    }
-    .message {
-      margin-top: 5px;
-      font-size: 18px;
-      color: #ffcc00;
-      min-height: 24px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu de Crash</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        #game-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 400px;
+        }
+        #multiplier {
+            font-size: 48px;
+            font-weight: bold;
+            color: #333;
+            margin: 20px 0;
+        }
+        #status {
+            font-size: 18px;
+            margin: 10px 0;
+            color: #666;
+        }
+        #bet-container {
+            margin: 20px 0;
+        }
+        input[type="number"] {
+            padding: 5px;
+            font-size: 16px;
+            width: 100px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 5px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        button#cashout {
+            background-color: #ff9800;
+        }
+        #history {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
 </head>
 <body>
-  <div id="root"></div>
-
-  <!-- On dit à Babel de transpilier le code React/JSX ici -->
-  <script type="text/babel">
-    /***********************************************
-     * 1) Données de la Roulette Européenne
-     ***********************************************/
-    const sectorsData = [
-      { number: 0, color: 'green' },
-      { number: 1, color: 'red' },
-      { number: 2, color: 'black' },
-      { number: 3, color: 'red' },
-      { number: 4, color: 'black' },
-      { number: 5, color: 'red' },
-      { number: 6, color: 'black' },
-      { number: 7, color: 'red' },
-      { number: 8, color: 'black' },
-      { number: 9, color: 'red' },
-      { number: 10, color: 'black' },
-      { number: 11, color: 'black' },
-      { number: 12, color: 'red' },
-      { number: 13, color: 'black' },
-      { number: 14, color: 'red' },
-      { number: 15, color: 'black' },
-      { number: 16, color: 'red' },
-      { number: 17, color: 'black' },
-      { number: 18, color: 'red' },
-      { number: 19, color: 'red' },
-      { number: 20, color: 'black' },
-      { number: 21, color: 'red' },
-      { number: 22, color: 'black' },
-      { number: 23, color: 'red' },
-      { number: 24, color: 'black' },
-      { number: 25, color: 'red' },
-      { number: 26, color: 'black' },
-      { number: 27, color: 'red' },
-      { number: 28, color: 'black' },
-      { number: 29, color: 'black' },
-      { number: 30, color: 'red' },
-      { number: 31, color: 'black' },
-      { number: 32, color: 'red' },
-      { number: 33, color: 'black' },
-      { number: 34, color: 'red' },
-      { number: 35, color: 'black' },
-      { number: 36, color: 'red' },
-    ];
-    const sectorAngle = 360 / sectorsData.length; // ~ 9.7297°
-
-    /***********************************************
-     * 2) Composant principal App
-     ***********************************************/
-    function App() {
-      return (
-        <div className="container">
-          <h1>Roulette Européenne</h1>
-          <Game />
+    <div id="game-container">
+        <h1>Jeu de Crash</h1>
+        <div id="multiplier">1.00x</div>
+        <div id="status">Placez votre mise pour commencer.</div>
+        <div id="bet-container">
+            <label>Mise (€) : </label>
+            <input type="number" id="bet" min="1" value="10">
         </div>
-      );
-    }
+        <button id="start">Démarrer</button>
+        <button id="cashout" disabled>Encaisser</button>
+        <div id="history"></div>
+    </div>
 
-    /***********************************************
-     * 3) Composant Game : Timer, Mises, Roulette
-     ***********************************************/
-    function Game() {
-      // Timer 30s
-      const [timeLeft, setTimeLeft] = React.useState(30);
-      const [spinDone, setSpinDone] = React.useState(false); // Empêche de relancer plusieurs fois
+    <script>
+        let multiplier = 1.0;
+        let isCrashed = false;
+        let isRunning = false;
+        let crashPoint = 0;
+        let interval;
+        let bet = 0;
+        let winnings = 0;
 
-      // Bets
-      const [bets, setBets] = React.useState({
-        numbers: new Set(),
-        red: false,
-        black: false,
-        even: false,
-        odd: false,
-      });
+        const multiplierDisplay = document.getElementById("multiplier");
+        const statusDisplay = document.getElementById("status");
+        const betInput = document.getElementById("bet");
+        const startButton = document.getElementById("start");
+        const cashoutButton = document.getElementById("cashout");
+        const historyDisplay = document.getElementById("history");
 
-      // Roulette
-      const [isSpinning, setIsSpinning] = React.useState(false);
-      const [totalRotation, setTotalRotation] = React.useState(0);
-      const wheelRef = React.useRef(null);
-
-      // Résultat
-      const [result, setResult] = React.useState(null);   // { number, color }
-      const [message, setMessage] = React.useState('');   // "Bravo"/"Désolé"/"Dommage"
-
-      /* ========== Timer => spin auto à 0s ========== */
-      React.useEffect(() => {
-        if (timeLeft <= 0 && !spinDone) {
-          doSpin();        // on lance la roue
-          setSpinDone(true);
-          return;
-        }
-        if (timeLeft > 0 && !spinDone) {
-          const timerId = setInterval(() => {
-            setTimeLeft(prev => prev - 1);
-          }, 1000);
-          return () => clearInterval(timerId);
-        }
-      }, [timeLeft, spinDone]);
-
-      /* ========== Tourner la roulette ========== */
-      function doSpin() {
-        if (isSpinning) return;
-        setIsSpinning(true);
-        setResult(null);
-        setMessage('');
-
-        // Choisir un secteur aléatoire
-        const randomSector = Math.floor(Math.random() * sectorsData.length);
-
-        // Ex: 5 tours complets = 5 * 360 = 1800
-        const fullTurns = 360 * 5;
-        // Angle final
-        const finalRotation = totalRotation + fullTurns - (randomSector * sectorAngle);
-
-        gsap.to(wheelRef.current, {
-          rotation: finalRotation,
-          duration: 4.5, 
-          ease: "power2.out",
-          transformOrigin: "50% 50%",
-          onComplete: () => {
-            setTotalRotation(finalRotation);
-            setIsSpinning(false);
-            const landed = sectorsData[randomSector];
-            setResult(landed);
-            // Vérifier si on a gagné
-            checkWin(landed);
-          }
-        });
-      }
-
-      /* ========== Vérifier gain/perte ========== */
-      function checkWin(landed) {
-        const { numbers, red, black, even, odd } = bets;
-
-        // Aucune mise ?
-        const noBet = (
-          numbers.size === 0 &&
-          red === false &&
-          black === false &&
-          even === false &&
-          odd === false
-        );
-        if (noBet) {
-          setMessage("Dommage, vous auriez pu gagner avec nous aujourd’hui !");
-          return;
+        // Générer un point de crash aléatoire (Provably Fair simplifié)
+        function generateCrashPoint() {
+            const random = Math.random(); // Entre 0 et 1
+            return Math.max(1.1, -(1 / (Math.log(random)) * 0.1)); // Distribution exponentielle
         }
 
-        let isWinner = false;
-        // Numéros
-        if (numbers.has(landed.number)) {
-          isWinner = true;
-        }
-        // Couleur
-        if (red && landed.color === 'red') {
-          isWinner = true;
-        }
-        if (black && landed.color === 'black') {
-          isWinner = true;
-        }
-        // Pair/Impair (0 est neutre)
-        if (even && landed.number !== 0 && landed.number % 2 === 0) {
-          isWinner = true;
-        }
-        if (odd && landed.number % 2 === 1) {
-          isWinner = true;
-        }
+        // Démarrer le jeu
+        function startGame() {
+            if (isRunning) return;
 
-        if (isWinner) {
-          setMessage("Bravo, vous avez gagné !");
-        } else {
-          setMessage("Désolé, vous avez perdu !");
-        }
-      }
-
-      /* ========== Gérer la sélection des mises ========== */
-      function toggleNumber(n) {
-        if (isSpinning || spinDone) return; 
-        const newSet = new Set(bets.numbers);
-        if (newSet.has(n)) {
-          newSet.delete(n);
-        } else {
-          newSet.add(n);
-        }
-        setBets({ ...bets, numbers: newSet });
-      }
-      function toggleOption(opt) {
-        if (isSpinning || spinDone) return;
-        setBets({ ...bets, [opt]: !bets[opt] });
-      }
-
-      return (
-        <>
-          <div className="timer">
-            {timeLeft > 0 
-              ? `Misez vite : ${timeLeft}s restantes`
-              : "La roulette va/est en train de tourner..."
+            bet = parseFloat(betInput.value);
+            if (isNaN(bet) || bet <= 0) {
+                alert("Veuillez entrer une mise valide !");
+                return;
             }
-          </div>
 
-          {/* TAPIS DE MISES */}
-          <Tapis bets={bets} toggleNumber={toggleNumber} toggleOption={toggleOption} />
+            multiplier = 1.0;
+            isCrashed = false;
+            isRunning = true;
+            crashPoint = generateCrashPoint();
+            multiplierDisplay.textContent = "1.00x";
+            statusDisplay.textContent = "Le multiplicateur monte...";
+            startButton.disabled = true;
+            cashoutButton.disabled = false;
+            betInput.disabled = true;
 
-          {/* ROULETTE */}
-          <div className="roulette-section">
-            <div className="roulette-wrapper">
-              <div className="pointer"></div>
-              <div ref={wheelRef} className="wheel">
-                {sectorsData.map((sec, i) => {
-                  const angle = i * sectorAngle;
-                  return (
-                    <div
-                      key={i}
-                      className="sector"
-                      style={{
-                        transform: `rotate(${angle}deg)`,
-                        backgroundColor: sec.color,
-                        color: sec.color === 'black' ? '#fff' : '#000'
-                      }}
-                    >
-                      <div className="sector-number">{sec.number}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            interval = setInterval(() => {
+                if (multiplier >= crashPoint) {
+                    crash();
+                } else {
+                    multiplier += 0.05; // Vitesse d'augmentation
+                    multiplierDisplay.textContent = `${multiplier.toFixed(2)}x`;
+                }
+            }, 50); // Mise à jour toutes les 50ms
+        }
 
-            <div className="result">
-              {result && (
-                <span>
-                  Résultat :&nbsp;
-                  <strong style={{ color: result.color === 'black' ? '#ccc' : result.color }}>
-                    {result.number}
-                  </strong>
-                </span>
-              )}
-            </div>
+        // Gérer le crash
+        function crash() {
+            isCrashed = true;
+            isRunning = false;
+            clearInterval(interval);
+            multiplierDisplay.textContent = `CRASH à ${crashPoint.toFixed(2)}x`;
+            statusDisplay.textContent = `Perdu ! Le crash était à ${crashPoint.toFixed(2)}x.`;
+            cashoutButton.disabled = true;
+            startButton.disabled = false;
+            betInput.disabled = false;
+            logResult(`Perdu - Mise: ${bet}€, Crash: ${crashPoint.toFixed(2)}x`);
+        }
 
-            <div className="message">{message}</div>
-          </div>
-        </>
-      );
-    }
+        // Encaisser les gains
+        function cashOut() {
+            if (!isRunning || isCrashed) return;
 
-    /***********************************************
-     * 4) Composant Tapis : numéros + Rouge/Noir/Pair/Impair
-     ***********************************************/
-    function Tapis({ bets, toggleNumber, toggleOption }) {
-      const { red, black, even, odd } = bets;
+            clearInterval(interval);
+            isRunning = false;
+            winnings = bet * multiplier;
+            statusDisplay.textContent = `Gagné ! ${winnings.toFixed(2)}€ encaissés à ${multiplier.toFixed(2)}x.`;
+            cashoutButton.disabled = true;
+            startButton.disabled = false;
+            betInput.disabled = false;
+            logResult(`Gagné - Mise: ${bet}€, Multiplicateur: ${multiplier.toFixed(2)}x, Gains: ${winnings.toFixed(2)}€`);
+        }
 
-      // On veut lister 1..36, plus la case 0
-      const numbers1to36 = sectorsData.filter(s => s.number >= 1);
+        // Ajouter un historique
+        function logResult(message) {
+            const entry = document.createElement("p");
+            entry.textContent = message;
+            historyDisplay.insertBefore(entry, historyDisplay.firstChild); // Dernier résultat en haut
+            if (historyDisplay.children.length > 5) {
+                historyDisplay.removeChild(historyDisplay.lastChild); // Limite à 5 entrées
+            }
+        }
 
-      return (
-        <div className="tapis-container">
-          <div className="section-title">Faites vos jeux</div>
-
-          {/* Rouge / Noir / Pair / Impair */}
-          <div className="options-row">
-            <label className={`option-item ${red ? 'active' : ''}`}>
-              <input 
-                type="checkbox"
-                checked={red}
-                onChange={() => toggleOption('red')}
-              />
-              Rouge
-            </label>
-            <label className={`option-item ${black ? 'active' : ''}`}>
-              <input 
-                type="checkbox"
-                checked={black}
-                onChange={() => toggleOption('black')}
-              />
-              Noir
-            </label>
-            <label className={`option-item ${even ? 'active' : ''}`}>
-              <input 
-                type="checkbox"
-                checked={even}
-                onChange={() => toggleOption('even')}
-              />
-              Pair
-            </label>
-            <label className={`option-item ${odd ? 'active' : ''}`}>
-              <input 
-                type="checkbox"
-                checked={odd}
-                onChange={() => toggleOption('odd')}
-              />
-              Impair
-            </label>
-          </div>
-
-          {/* Grille 0..36 */}
-          <div className="tapis-grid">
-            {/* Case 0 */}
-            <div 
-              className={`tapis-cell zero-cell ${bets.numbers.has(0) ? 'checked' : ''}`}
-              onClick={() => toggleNumber(0)}
-            >
-              0
-            </div>
-
-            {numbers1to36.map(sec => (
-              <div 
-                key={sec.number}
-                className={`tapis-cell ${bets.numbers.has(sec.number) ? 'checked' : ''}`}
-                onClick={() => toggleNumber(sec.number)}
-              >
-                {sec.number}
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    /***********************************************
-     * 5) Rendu final
-     ***********************************************/
-    ReactDOM.render(<App />, document.getElementById('root'));
-  </script>
+        // Événements des boutons
+        startButton.addEventListener("click", startGame);
+        cashoutButton.addEventListener("click", cashOut);
+    </script>
 </body>
 </html>
