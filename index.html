@@ -147,8 +147,9 @@
         let horseX = 0;
         let curvePoints = [];
         let gameCount = 0;
-        let earlyCashouts = 0; // Compte les cashouts avant x1.5
-        let penaltyGames = 0;  // Compte les parties de pénalité (crash immédiat)
+        let earlyCashouts = 0;
+        let penaltyGames = 0;
+        let rocketY = -20; // Position initiale de la fusée (hors écran)
 
         const canvas = document.getElementById("game-canvas");
         const ctx = canvas.getContext("2d");
@@ -164,26 +165,24 @@
         // Générer un crash truqué
         function generateCrashPoint() {
             gameCount++;
-
-            // Pénalité : crash immédiat si trop de cashouts avant x1.5
             if (penaltyGames > 0) {
                 penaltyGames--;
-                return 1.0; // Crash instantané
+                return 1.0;
             }
 
             const random = Math.random();
             if (gameCount === 1) {
-                return 20; // x20 garanti
+                return 20;
             } else if (gameCount === 2) {
-                return 15; // x15 garanti
-            } else if (random < 0.01 && gameCount > 10) { // 1% chance après 10 parties
-                return 100 + random * 20; // x100 à x120
-            } else if (random < 0.6) { // 60% crashs bas
-                return 1.1 + random * 1.9; // 1.1x à 3x
-            } else if (random < 0.9) { // 30% crashs moyens
-                return 3 + random * 2; // 3x à 5x
-            } else { // 9% crashs modérés
-                return 5 + random * 5; // 5x à 10x
+                return 15;
+            } else if (random < 0.01 && gameCount > 10) {
+                return 100 + random * 20;
+            } else if (random < 0.6) {
+                return 1.1 + random * 1.9;
+            } else if (random < 0.9) {
+                return 3 + random * 2;
+            } else {
+                return 5 + random * 5;
             }
         }
 
@@ -217,6 +216,20 @@
             ctx.fillRect((horseX - 8) % canvas.width, 65, 6, 10);
             ctx.fillStyle = "#000";
             ctx.fillRect((horseX + 25) % canvas.width, 65, 6, 10);
+
+            // Fusée (si crash)
+            if (isCrashed && rocketY < 60) {
+                rocketY += 5; // Chute de la fusée
+            }
+            if (isCrashed) {
+                ctx.fillStyle = "#F44336";
+                ctx.fillRect((horseX % canvas.width) + 5, rocketY - 20, 15, 30); // Corps fusée
+                ctx.beginPath();
+                ctx.moveTo((horseX % canvas.width) + 12.5, rocketY - 20);
+                ctx.lineTo((horseX % canvas.width) + 20, rocketY - 30);
+                ctx.lineTo((horseX % canvas.width) + 5, rocketY - 30);
+                ctx.fill(); // Pointe fusée
+            }
         }
 
         // Démarrer le jeu
@@ -235,6 +248,7 @@
             isCrashed = false;
             isRunning = true;
             horseX = 0;
+            rocketY = -20; // Réinitialiser la fusée
             curvePoints = [multiplier];
             crashPoint = generateCrashPoint();
             multiplierDisplay.textContent = "1.00x";
@@ -266,12 +280,15 @@
             isRunning = false;
             clearInterval(interval);
             multiplierDisplay.textContent = `CRASH à ${crashPoint.toFixed(2)}x`;
-            statusDisplay.textContent = crashPoint === 1.0 ? "Crash instantané ! Oups !" : "Pas de chance ! Tente encore ?";
+            statusDisplay.textContent = crashPoint === 1.0 ? "Fusée explosive ! Oups !" : "Fusée crashée ! Réessaie ?";
             cashoutButton.disabled = true;
             startButton.disabled = false;
             betInput.disabled = false;
-            ctx.fillStyle = "#F44336";
-            ctx.fillRect(horseX % canvas.width, 60, 25, 15);
+            drawScene(); // Dessiner la fusée qui tombe
+            setTimeout(() => {
+                ctx.fillStyle = "#F44336";
+                ctx.fillRect(horseX % canvas.width, 60, 25, 15); // Cheval écrasé après animation
+            }, 500); // Délai pour voir la fusée tomber
             logResult(`Perdu - Mise: ${bet}€, Crash: ${crashPoint.toFixed(2)}x`);
             checkGameOver();
         }
@@ -287,12 +304,11 @@
             walletDisplay.textContent = `Portefeuille : ${wallet.toFixed(2)}€`;
             statusDisplay.textContent = `Génial ! ${winnings.toFixed(2)}€ gagnés !`;
 
-            // Vérifier cashout avant x1.5
             if (multiplier < 1.5) {
                 earlyCashouts++;
                 if (earlyCashouts > 3) {
-                    penaltyGames = 3; // 3 crashs immédiats suivants
-                    earlyCashouts = 0; // Réinitialiser après pénalité
+                    penaltyGames = 3;
+                    earlyCashouts = 0;
                 }
             }
 
