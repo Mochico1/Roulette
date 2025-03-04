@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jeu de Crash</title>
+    <title>Jeu de Crash - Cheval Sauveteur</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -20,7 +20,7 @@
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             text-align: center;
-            width: 400px;
+            width: 600px;
         }
         #multiplier {
             font-size: 48px;
@@ -63,12 +63,17 @@
             font-size: 14px;
             color: #555;
         }
+        #game-canvas {
+            border: 1px solid #ccc;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
     <div id="game-container">
-        <h1>Jeu de Crash</h1>
+        <h1>Jeu de Crash - Cheval Sauveteur</h1>
         <div id="multiplier">1.00x</div>
+        <canvas id="game-canvas" width="500" height="200"></canvas>
         <div id="status">Placez votre mise pour commencer.</div>
         <div id="bet-container">
             <label>Mise (€) : </label>
@@ -87,7 +92,10 @@
         let interval;
         let bet = 0;
         let winnings = 0;
+        let horseX = 0; // Position du cheval
 
+        const canvas = document.getElementById("game-canvas");
+        const ctx = canvas.getContext("2d");
         const multiplierDisplay = document.getElementById("multiplier");
         const statusDisplay = document.getElementById("status");
         const betInput = document.getElementById("bet");
@@ -95,10 +103,33 @@
         const cashoutButton = document.getElementById("cashout");
         const historyDisplay = document.getElementById("history");
 
-        // Générer un point de crash aléatoire (Provably Fair simplifié)
+        // Générer un point de crash aléatoire
         function generateCrashPoint() {
-            const random = Math.random(); // Entre 0 et 1
-            return Math.max(1.1, -(1 / (Math.log(random)) * 0.1)); // Distribution exponentielle
+            const random = Math.random();
+            return Math.max(1.1, -(1 / (Math.log(random)) * 0.1));
+        }
+
+        // Dessiner l'animation
+        function drawScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Dessiner le sol
+            ctx.fillStyle = "#8BC34A";
+            ctx.fillRect(0, 150, canvas.width, 50);
+
+            // Dessiner la princesse à droite
+            ctx.fillStyle = "#F06292";
+            ctx.fillRect(450, 100, 20, 50); // Corps simple
+            ctx.beginPath();
+            ctx.arc(460, 90, 10, 0, Math.PI * 2); // Tête
+            ctx.fill();
+
+            // Dessiner le cheval (rectangle animé pour simplifier)
+            ctx.fillStyle = "#795548";
+            ctx.fillRect(horseX, 120, 40, 30); // Corps
+            ctx.fillRect(horseX - 10, 130, 10, 20); // Queue
+            ctx.fillStyle = "#000";
+            ctx.fillRect(horseX + 40, 130, 10, 20); // Tête
         }
 
         // Démarrer le jeu
@@ -114,9 +145,10 @@
             multiplier = 1.0;
             isCrashed = false;
             isRunning = true;
+            horseX = 0;
             crashPoint = generateCrashPoint();
             multiplierDisplay.textContent = "1.00x";
-            statusDisplay.textContent = "Le multiplicateur monte...";
+            statusDisplay.textContent = "Le cheval galope vers la princesse...";
             startButton.disabled = true;
             cashoutButton.disabled = false;
             betInput.disabled = true;
@@ -125,10 +157,14 @@
                 if (multiplier >= crashPoint) {
                     crash();
                 } else {
-                    multiplier += 0.05; // Vitesse d'augmentation
+                    multiplier += 0.05;
+                    horseX += 2; // Le cheval avance
+                    if (horseX > canvas.width) horseX = canvas.width; // Limite
                     multiplierDisplay.textContent = `${multiplier.toFixed(2)}x`;
+                    drawScene();
                 }
-            }, 50); // Mise à jour toutes les 50ms
+            }, 50);
+            drawScene();
         }
 
         // Gérer le crash
@@ -137,10 +173,12 @@
             isRunning = false;
             clearInterval(interval);
             multiplierDisplay.textContent = `CRASH à ${crashPoint.toFixed(2)}x`;
-            statusDisplay.textContent = `Perdu ! Le crash était à ${crashPoint.toFixed(2)}x.`;
+            statusDisplay.textContent = `Le cheval s'est écrasé avant de sauver la princesse !`;
             cashoutButton.disabled = true;
             startButton.disabled = false;
             betInput.disabled = false;
+            ctx.fillStyle = "#F44336";
+            ctx.fillRect(horseX, 120, 40, 30); // Cheval "crashed" en rouge
             logResult(`Perdu - Mise: ${bet}€, Crash: ${crashPoint.toFixed(2)}x`);
         }
 
@@ -151,26 +189,32 @@
             clearInterval(interval);
             isRunning = false;
             winnings = bet * multiplier;
-            statusDisplay.textContent = `Gagné ! ${winnings.toFixed(2)}€ encaissés à ${multiplier.toFixed(2)}x.`;
+            statusDisplay.textContent = `Le cheval a sauvé la princesse ! ${winnings.toFixed(2)}€ à ${multiplier.toFixed(2)}x.`;
             cashoutButton.disabled = true;
             startButton.disabled = false;
             betInput.disabled = false;
+            drawScene();
+            ctx.fillStyle = "#FFD700";
+            ctx.fillRect(450, 100, 20, 50); // Princesse "sauvée" en doré
             logResult(`Gagné - Mise: ${bet}€, Multiplicateur: ${multiplier.toFixed(2)}x, Gains: ${winnings.toFixed(2)}€`);
         }
 
-        // Ajouter un historique
+        // Historique
         function logResult(message) {
             const entry = document.createElement("p");
             entry.textContent = message;
-            historyDisplay.insertBefore(entry, historyDisplay.firstChild); // Dernier résultat en haut
+            historyDisplay.insertBefore(entry, historyDisplay.firstChild);
             if (historyDisplay.children.length > 5) {
-                historyDisplay.removeChild(historyDisplay.lastChild); // Limite à 5 entrées
+                historyDisplay.removeChild(historyDisplay.lastChild);
             }
         }
 
-        // Événements des boutons
+        // Événements
         startButton.addEventListener("click", startGame);
         cashoutButton.addEventListener("click", cashOut);
+
+        // Dessiner la scène initiale
+        drawScene();
     </script>
 </body>
 </html>
