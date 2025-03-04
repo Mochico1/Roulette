@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crash Runner - 3D Casino</title>
+    <title>Crash Runner - 3D Infini</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -155,48 +155,69 @@
         document.getElementById("game-canvas").appendChild(renderer.domElement);
         renderer.setClearColor(0x0d1b38);
 
-        // Éléments 3D
-        let horse, rocket, ground, particles = [];
-        let horseX = -5;
-        let rocketY = 10;
-        let explosion = false;
-
         // Lumière
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
         const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
         directionalLight.position.set(5, 10, 5);
         scene.add(directionalLight);
 
-        // Sol
-        const groundGeometry = new THREE.PlaneGeometry(20, 20);
+        // Sol infini
+        const groundGeometry = new THREE.PlaneGeometry(100, 100);
         const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x4CAF50 });
-        ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
         ground.rotation.x = -Math.PI / 2;
         ground.position.y = -2;
         scene.add(ground);
 
-        // Cheval
-        const horseBodyGeometry = new THREE.BoxGeometry(1, 0.8, 0.4);
-        const horseMaterial = new THREE.MeshPhongMaterial({ color: 0x5D4037, shininess: 50 });
-        horse = new THREE.Mesh(horseBodyGeometry, horseMaterial);
-        horse.position.set(horseX, -1.6, 0);
+        // Étoiles
+        const stars = [];
+        for (let i = 0; i < 100; i++) {
+            const starGeometry = new THREE.SphereGeometry(Math.random() * 0.05 + 0.02, 16, 16);
+            const starMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const star = new THREE.Mesh(starGeometry, starMaterial);
+            star.position.set(
+                (Math.random() - 0.5) * 50,
+                Math.random() * 10,
+                (Math.random() - 0.5) * 50
+            );
+            stars.push(star);
+            scene.add(star);
+        }
 
-        const horseLegGeometry = new THREE.BoxGeometry(0.2, 0.6, 0.2);
+        // Cheval réaliste
+        const horse = new THREE.Group();
+        const bodyGeometry = new THREE.CapsuleGeometry(0.5, 1, 32); // Corps arrondi
+        const horseMaterial = new THREE.MeshPhongMaterial({ color: 0x5D4037, shininess: 50 });
+        const horseBody = new THREE.Mesh(bodyGeometry, horseMaterial);
+        horseBody.rotation.z = Math.PI / 2;
+        horse.add(horseBody);
+
+        const headGeometry = new THREE.SphereGeometry(0.3, 32, 32);
+        const horseHead = new THREE.Mesh(headGeometry, horseMaterial);
+        horseHead.position.set(0.8, 0.3, 0);
+        horse.add(horseHead);
+
+        const legGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.6, 16);
         const legs = [];
         for (let i = 0; i < 4; i++) {
-            legs[i] = new THREE.Mesh(horseLegGeometry, horseMaterial);
-            legs[i].position.set(i % 2 === 0 ? -0.3 : 0.3, -1.9, i < 2 ? 0.1 : -0.1);
+            legs[i] = new THREE.Mesh(legGeometry, horseMaterial);
+            legs[i].position.set(
+                i % 2 === 0 ? -0.3 : 0.3,
+                -0.3,
+                i < 2 ? 0.2 : -0.2
+            );
             horse.add(legs[i]);
         }
+        horse.position.set(0, -1.5, 0);
         scene.add(horse);
 
         // Fusée
+        const rocket = new THREE.Group();
         const rocketBodyGeometry = new THREE.CylinderGeometry(0.2, 0.3, 1.5, 32);
         const rocketMaterial = new THREE.MeshPhongMaterial({ color: 0xB0BEC5, shininess: 100 });
-        rocket = new THREE.Mesh(rocketBodyGeometry, rocketMaterial);
-        rocket.position.set(horseX, rocketY, 0);
-        rocket.rotation.z = Math.PI;
+        const rocketBody = new THREE.Mesh(rocketBodyGeometry, rocketMaterial);
+        rocket.add(rocketBody);
 
         const rocketTipGeometry = new THREE.ConeGeometry(0.2, 0.5, 32);
         const rocketTipMaterial = new THREE.MeshPhongMaterial({ color: 0xF44336 });
@@ -213,18 +234,26 @@
         fin2.position.set(-0.35, 0, 0);
         rocket.add(fin2);
 
-        // Flammes (simples)
         const flameGeometry = new THREE.ConeGeometry(0.2, 0.5, 16);
         const flameMaterial = new THREE.MeshBasicMaterial({ color: 0xFF9800, transparent: true, opacity: 0.8 });
         const flame = new THREE.Mesh(flameGeometry, flameMaterial);
         flame.position.y = -0.65;
         rocket.add(flame);
 
+        let rocketY = 10;
+        rocket.position.set(0, rocketY, 0);
+        rocket.rotation.z = Math.PI;
+
+        // Variables
+        let horseSpeed = 0;
+        let particles = [];
+        let explosion = false;
+
         // Caméra
         camera.position.set(0, 2, 5);
         camera.lookAt(0, 0, 0);
 
-        // Variables de contrôle
+        // Contrôles UI
         const multiplierDisplay = document.getElementById("multiplier");
         const statusDisplay = document.getElementById("status");
         const probabilityDisplay = document.getElementById("probability");
@@ -257,7 +286,7 @@
             return Math.min(100, ((multiplier - 1) / (maxCrash - 1)) * 70);
         }
 
-        // Particules d’explosion
+        // Explosion
         function createExplosion(x, y, z) {
             explosion = true;
             for (let i = 0; i < 50; i++) {
@@ -281,16 +310,24 @@
             requestAnimationFrame(animate);
 
             if (isRunning && !isCrashed) {
-                horseX += 0.05;
-                horse.position.x = horseX % 10 - 5;
-                legs.forEach((leg, i) => {
-                    leg.position.y = -1.9 + (Math.sin(horseX * 5 + (i % 2) * Math.PI) * 0.1);
+                horseSpeed += 0.05;
+                horse.position.z -= 0.1; // Cheval avance
+                ground.position.z -= 0.1; // Sol défile
+                if (ground.position.z < -50) ground.position.z += 100; // Boucle infinie
+                stars.forEach(star => {
+                    star.position.z -= 0.05;
+                    if (star.position.z < -25) star.position.z += 50;
+                    star.scale.setScalar(1 + Math.sin(Date.now() * 0.01) * 0.2); // Scintillement
                 });
+                legs.forEach((leg, i) => {
+                    leg.position.y = -0.3 + (Math.sin(horseSpeed * 5 + (i % 2) * Math.PI) * 0.15);
+                });
+                camera.position.z = horse.position.z + 5; // Caméra suit
             }
 
-            if (isCrashed && rocketY > -1.6) {
+            if (isCrashed && rocketY > -1.5) {
                 rocketY -= 0.1;
-                rocket.position.set(horse.position.x, rocketY, 0);
+                rocket.position.set(horse.position.x, rocketY, horse.position.z);
                 flame.scale.set(1 + Math.random() * 0.2, 1 + Math.random() * 0.5, 1);
             }
 
@@ -327,8 +364,11 @@
             multiplier = 1.0;
             isCrashed = false;
             isRunning = true;
-            horseX = -5;
+            horseSpeed = 0;
+            horse.position.set(0, -1.5, 0);
+            ground.position.z = 0;
             rocketY = 10;
+            rocket.position.set(0, rocketY, 0);
             explosion = false;
             particles.forEach(p => scene.remove(p));
             particles = [];
@@ -365,16 +405,15 @@
             betInput.disabled = false;
 
             setTimeout(() => {
-                if (rocketY <= -1.6) {
+                if (rocketY <= -1.5) {
                     scene.remove(horse);
-                    createExplosion(horse.position.x, -1.6, 0);
+                    createExplosion(horse.position.x, -1.5, horse.position.z);
                     setTimeout(() => {
-                        horse = new THREE.Mesh(horseBodyGeometry, new THREE.MeshPhongMaterial({ color: 0xF44336 }));
-                        horse.position.set(horseX % 10 - 5, -1.6, 0);
+                        horse.material.color.set(0xF44336);
                         scene.add(horse);
                     }, 1500);
                 }
-            }, rocketY > -1.6 ? 2000 : 0);
+            }, rocketY > -1.5 ? 2000 : 0);
 
             logResult(`Perdu - Mise: ${bet}€, Crash: ${crashPoint.toFixed(2)}x`);
             checkGameOver();
